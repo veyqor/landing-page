@@ -1,0 +1,76 @@
+.page {
+  min-height: 100dvh;
+}
+
+.emptyPanel {
+  border: 1px solid rgba(60, 66, 78, 0.12);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 14px 32px rgba(16, 19, 29, 0.06);
+  padding: 18px;
+  display: grid;
+  gap: 12px;
+}
+
+.emptyPanel h2 {
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.emptyPanel p {
+  color: #525a6b;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.emptyState {
+  border: 1px dashed rgba(60, 66, 78, 0.22);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff, #fbfaf6 100%);
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.emptyState strong {
+  font-size: 16px;
+}
+
+.emptyState p {
+  color: #525a6b;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.emptyActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.primaryAction {
+  min-height: 40px;
+  border-radius: 10px;
+  padding: 0 15px;
+  border: 1px solid rgba(240, 186, 62, 0.3);
+  background: linear-gradient(180deg, #f4cb6d, #f0ba3e);
+  color: #10131d;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.secondaryAction {
+  min-height: 40px;
+  border-radius: 10px;
+  padding: 0 15px;
+  border: 1px solid rgba(60, 66, 78, 0.18);
+  background: #ffffff;
+  color: #3c424e;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.primaryAction:hover,
+.secondaryAction:hover {
+  box-shadow: 0 10px 24px rgba(16, 19, 29, 0.05);
+}

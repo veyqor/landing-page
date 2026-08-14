@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 
 import Image from 'next/image';
+import Link from 'next/link';
 
 interface NavbarProps {
   onOpenDemo: () => void;
@@ -45,12 +46,9 @@ export default function Navbar({ onOpenDemo }: NavbarProps) {
           </div>
         </div>
         <div className="nav-right">
-          <button
-            onClick={() => alert('Sign-in portal simulated for VEYQOR platform.')}
-            className="nav-signin"
-          >
+          <Link href="/sign-in" className="nav-signin">
             Sign in
-          </button>
+          </Link>
           <button onClick={onOpenDemo} className="btn-gold">
             Demo
           </button>

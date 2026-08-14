@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import LandingSwitcher from '@/components/LandingSwitcher';
 import styles from './page.module.css';
 
@@ -182,15 +183,19 @@ export default function LandingPageTwo() {
             </div>
           </div>
           <div className="nav-right">
-            <button className="nav-signin" onClick={() => alert('Sign-in portal simulated for VEYQOR platform.')}>
-              Sign in
-            </button>
+            <Link href="/sign-in" className="nav-signin">Sign in</Link>
             <a href="#demo" className="btn-gold">Demo</a>
           </div>
         </nav>
       </div>
 
       <header className="hero">
+        <div className="hero-video-layer" aria-hidden="true">
+          <video className="hero-video" autoPlay loop muted playsInline preload="metadata">
+            <source src="/videos/veyqor-hero1.mp4" type="video/mp4" />
+          </video>
+          <div className="hero-video-scrim"></div>
+        </div>
         <div className="hero-noise"></div>
         <div className="hero-grid"></div>
         <div className="wrap hero-inner">
