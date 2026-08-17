@@ -32,6 +32,7 @@ type ExceptionItem = {
 
 const TENANT_STORAGE_KEY = 'veyqor.mock.tenant-context.v1';
 const ORG_STORAGE_KEY = 'veyqor.mock.org-context.v1';
+const CASE_CONTEXT_STORAGE_KEY = 'veyqor.mock.case-context.v1';
 const WORKFLOW_STEPS = ['Signal Intake', 'Criteria', 'Approval', 'Candidate Ingestion'];
 
 const INITIAL_REQUIREMENTS: GeneratedRequirement[] = [
@@ -316,6 +317,21 @@ export default function CriteriaEditorPage() {
 
   function saveDraft() {
     setDraftSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+  }
+
+  function continueToApproval() {
+    const existingContext = window.localStorage.getItem(CASE_CONTEXT_STORAGE_KEY);
+    if (!existingContext) {
+      window.localStorage.setItem(
+        CASE_CONTEXT_STORAGE_KEY,
+        JSON.stringify({
+          jobTitle: 'Senior Frontend Engineer',
+          caseId: 'Case #VQ-1042',
+        })
+      );
+    }
+
+    router.push('/criteria-approval');
   }
 
   if (!session) {
@@ -729,7 +745,7 @@ export default function CriteriaEditorPage() {
               <button type="button" className={styles.secondaryButton} onClick={() => router.push('/job-intake')}>Back</button>
               <button type="button" className={styles.secondaryButton} onClick={saveDraft}>Save draft</button>
               <button type="button" className={styles.secondaryButton} onClick={resolveAllExceptions} disabled={openExceptions.length === 0}>Resolve exceptions</button>
-              <button type="button" className={styles.primaryButton} disabled={!readyForValidation} onClick={() => router.push('/criteria-approval')}>Continue to approval</button>
+              <button type="button" className={styles.primaryButton} disabled={!readyForValidation} onClick={continueToApproval}>Continue to approval</button>
             </div>
           </div>
         </section>

@@ -16,6 +16,17 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Prototype sign-in
+
+The sign-in flow uses seeded mock accounts. Use any of the credentials below:
+
+- Operator: `operator@veyqor.internal` / `Operator#2026`
+- Reviewer: `reviewer@veyqor.internal` / `Reviewer#2026`
+- Leadership: `leadership@veyqor.internal` / `Leadership#2026`
+- Administrator (MFA): `admin@veyqor.internal` / `Admin#2026`
+
+For the administrator account, the MFA verification code is: `730241`.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

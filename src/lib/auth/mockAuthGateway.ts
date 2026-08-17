@@ -89,6 +89,7 @@ interface MfaChallenge {
 }
 
 const SESSION_STORAGE_KEY = 'veyqor.mock.session.v1';
+let inMemorySession: AuthSession | null = null;
 
 const SEED_ACCOUNTS: SeedAccount[] = [
   {
@@ -380,40 +381,53 @@ function createMfaChallenge(email: string): string {
 
 function readStoredSession(): AuthSession | null {
   if (typeof window === 'undefined') {
-    return null;
-  }
-
-  const raw = window.localStorage.getItem(SESSION_STORAGE_KEY);
-  if (!raw) {
-    return null;
+    return inMemorySession;
   }
 
   try {
-    const parsed = JSON.parse(raw) as AuthSession;
-    if (!parsed?.sessionId || !parsed?.email) {
-      return null;
+    const raw = window.localStorage.getItem(SESSION_STORAGE_KEY);
+    if (!raw) {
+      return inMemorySession;
     }
 
+    const parsed = JSON.parse(raw) as AuthSession;
+    if (!parsed?.sessionId || !parsed?.email) {
+      return inMemorySession;
+    }
+
+    inMemorySession = parsed;
     return parsed;
   } catch {
-    return null;
+    return inMemorySession;
   }
 }
 
 function writeStoredSession(session: AuthSession) {
+  inMemorySession = session;
+
   if (typeof window === 'undefined') {
     return;
   }
 
-  window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+  try {
+    window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+  } catch {
+    // Continue with in-memory session when persistent storage is unavailable.
+  }
 }
 
 function removeStoredSession() {
+  inMemorySession = null;
+
   if (typeof window === 'undefined') {
     return;
   }
 
-  window.localStorage.removeItem(SESSION_STORAGE_KEY);
+  try {
+    window.localStorage.removeItem(SESSION_STORAGE_KEY);
+  } catch {
+    // Ignore storage errors during sign-out cleanup.
+  }
 }
 
 export const mockAuthGateway: AuthGateway = {

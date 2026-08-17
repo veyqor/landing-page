@@ -58,8 +58,16 @@ type ExceptionItem = {
   status: ExceptionStatus;
 };
 
+type CaseContext = {
+  jobTitle: string;
+  caseId: string;
+};
+
+type ValidationState = 'in-progress' | 'ready' | 'failed';
+
 const TENANT_STORAGE_KEY = 'veyqor.mock.tenant-context.v1';
 const ORG_STORAGE_KEY = 'veyqor.mock.org-context.v1';
+const CASE_CONTEXT_STORAGE_KEY = 'veyqor.mock.case-context.v1';
 const WORKFLOW_STEPS = ['Signal Intake', 'Criteria', 'Approval', 'Candidate Ingestion'];
 
 const INITIAL_CRITERIA: Criterion[] = [
@@ -201,12 +209,20 @@ export default function CriteriaApprovalPage() {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [tenantName, setTenantName] = useState('');
   const [orgName, setOrgName] = useState('');
+  const [caseContext, setCaseContext] = useState<CaseContext>({
+    jobTitle: 'Senior Frontend Engineer',
+    caseId: 'Case #VQ-1042',
+  });
   const [criteria, setCriteria] = useState<Criterion[]>(INITIAL_CRITERIA);
   const [exceptions, setExceptions] = useState<ExceptionItem[]>(INITIAL_EXCEPTIONS);
   const [selectedVersionId, setSelectedVersionId] = useState('version-2');
   const [editingCriterionId, setEditingCriterionId] = useState<string | null>(null);
   const [editingDraft, setEditingDraft] = useState<CriterionDraft | null>(null);
   const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [showReturnModal, setShowReturnModal] = useState(false);
+  const [returnReason, setReturnReason] = useState('');
+  const [showComparisonModal, setShowComparisonModal] = useState(false);
+  const [validationState, setValidationState] = useState<ValidationState>('in-progress');
   const [approved, setApproved] = useState(false);
   const [approvedAt, setApprovedAt] = useState('');
 
@@ -231,7 +247,37 @@ export default function CriteriaApprovalPage() {
 
     setTenantName(tenant.name);
     setOrgName(org.name);
+
+    const rawContext = window.localStorage.getItem(CASE_CONTEXT_STORAGE_KEY);
+    if (!rawContext) {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(rawContext) as Partial<CaseContext>;
+      const nextJobTitle = parsed.jobTitle?.trim();
+      const nextCaseId = parsed.caseId?.trim();
+      if (!nextJobTitle || !nextCaseId) {
+        return;
+      }
+      setCaseContext({ jobTitle: nextJobTitle, caseId: nextCaseId });
+    } catch {
+      // Ignore malformed prototype context payloads.
+    }
   }, [router]);
+
+  useEffect(() => {
+    if (!session) {
+      return;
+    }
+
+    setValidationState('in-progress');
+    const timer = window.setTimeout(() => {
+      setValidationState(session.email === 'error@veyqor.internal' ? 'failed' : 'ready');
+    }, 700);
+
+    return () => window.clearTimeout(timer);
+  }, [session, criteria]);
 
   const requiredCriteria = useMemo(() => criteria.filter((item) => item.priority === 'required'), [criteria]);
   const preferredCriteria = useMemo(() => criteria.filter((item) => item.priority === 'preferred'), [criteria]);
@@ -244,6 +290,22 @@ export default function CriteriaApprovalPage() {
 
   const isAuthorizedApprover = Boolean(session && session.role !== 'operator');
   const approvalReady = isAuthorizedApprover && openExceptions.length === 0;
+  const averageConfidence = useMemo(() => {
+    if (!criteria.length) {
+      return 'Low';
+    }
+
+    const total = criteria.reduce((sum, item) => {
+      if (item.confidence === 'High') return sum + 3;
+      if (item.confidence === 'Medium') return sum + 2;
+      return sum + 1;
+    }, 0);
+
+    const score = total / criteria.length;
+    if (score >= 2.6) return 'High';
+    if (score >= 1.8) return 'Medium';
+    return 'Low';
+  }, [criteria]);
 
   const approvalStatus = approved
     ? 'approved'
@@ -257,8 +319,10 @@ export default function CriteriaApprovalPage() {
 
   const approvalLabel = approved
     ? 'Criteria approved'
-    : approvalStatus === 'blocked'
-      ? 'Blocked'
+    : !isAuthorizedApprover
+      ? 'Approval unavailable'
+      : approvalStatus === 'blocked'
+        ? 'Approval blocked'
       : approvalStatus === 'review'
         ? 'Review required'
         : 'Ready for approval';
@@ -279,7 +343,7 @@ export default function CriteriaApprovalPage() {
     { label: 'Ambiguity detection', value: openExceptions.length ? `${openExceptions.length} open` : 'None detected', tone: openExceptions.length ? 'review' : 'ready', detail: 'Material ambiguities are surfaced above' },
     { label: 'Missing information', value: blockingExceptions.length ? 'Attention required' : 'None detected', tone: blockingExceptions.length ? 'blocked' : 'ready', detail: 'Only governed gaps are surfaced' },
     { label: 'Policy considerations', value: openExceptions.length ? 'Review required' : 'Passed', tone: openExceptions.length ? 'review' : 'ready', detail: 'No prohibited approval rules are introduced' },
-    { label: 'AI confidence', value: 'High', tone: 'high', detail: 'Criteria are supported by structured source signals' },
+    { label: 'AI confidence', value: averageConfidence, tone: 'high', detail: 'Confidence reflects generated criteria quality, not final hiring decisions' },
   ] as const;
 
   const approvalRequirements = [
@@ -345,7 +409,7 @@ export default function CriteriaApprovalPage() {
   }
 
   function openApprovalModal() {
-    if (!approvalReady) {
+    if (!approvalReady || validationState !== 'ready') {
       return;
     }
 
@@ -357,6 +421,39 @@ export default function CriteriaApprovalPage() {
     setApprovedAt(new Date().toLocaleString());
     setShowApprovalModal(false);
   }
+
+  function retryValidation() {
+    setValidationState('in-progress');
+    window.setTimeout(() => {
+      setValidationState('ready');
+    }, 750);
+  }
+
+  function sendBackForRevision() {
+    window.localStorage.setItem(
+      CASE_CONTEXT_STORAGE_KEY,
+      JSON.stringify({
+        jobTitle: caseContext.jobTitle,
+        caseId: caseContext.caseId,
+      })
+    );
+    setShowReturnModal(false);
+    router.push('/criteria-editor');
+  }
+
+  const groupedChanges = useMemo(() => {
+    const added = selectedVersion.changes.filter((item) => item.type === 'added');
+    const modified = selectedVersion.changes.filter((item) => item.type === 'modified');
+    const reclassified = selectedVersion.changes.filter((item) => item.type === 'reclassified');
+    const removed: VersionChange[] = [];
+    return { added, modified, removed, reclassified };
+  }, [selectedVersion]);
+
+  const totalChangeCount =
+    groupedChanges.added.length
+    + groupedChanges.modified.length
+    + groupedChanges.removed.length
+    + groupedChanges.reclassified.length;
 
   if (!session) {
     return (
@@ -402,10 +499,11 @@ export default function CriteriaApprovalPage() {
         <section className={editorStyles.headerBlock}>
           <div className={editorStyles.headerTop}>
             <div>
+              <p className={styles.breadcrumb}>Cases / Job Intake / Criteria Approval</p>
               <p className={editorStyles.kicker}>Governance checkpoint</p>
               <h1>Criteria approval</h1>
-              <p>VEYQOR generated and validated the criteria. Review the final output, inspect the version history, and approve only when the governed decision is ready.</p>
-              <p className={editorStyles.pageIdentity}><strong>Senior Frontend Engineer · Criteria v2</strong><small>Authorised review before candidate ingestion</small></p>
+              <p>Review the final evaluation criteria before approving them for candidate assessment.</p>
+              <p className={styles.caseContext}><strong>{caseContext.jobTitle}</strong><small>{caseContext.caseId} · Criteria v{selectedVersion.version}</small></p>
             </div>
 
             <div className={editorStyles.aiDraftReady}>
@@ -419,8 +517,8 @@ export default function CriteriaApprovalPage() {
 
           <div className={editorStyles.stepper} aria-label="Workflow progress">
             {WORKFLOW_STEPS.map((step, index) => (
-              <div key={step} className={`${editorStyles.step} ${index === 2 ? editorStyles.stepActive : ''}`}>
-                <span>{index + 1}</span>
+              <div key={step} className={`${editorStyles.step} ${index < 2 ? styles.stepComplete : ''} ${index === 2 ? editorStyles.stepActive : ''}`}>
+                <span>{index < 2 ? '✓' : index + 1}</span>
                 <p>{step}</p>
               </div>
             ))}
@@ -541,6 +639,81 @@ export default function CriteriaApprovalPage() {
                   </div>
                 </article>
 
+                <article className={`${editorStyles.groupCard} ${styles.criteriaGroup}`}>
+                  <button type="button" className={editorStyles.groupToggle} onClick={() => router.push('/criteria-editor')}>
+                    <div>
+                      <h3>Preferred</h3>
+                      <small>Optional criteria that inform ranking and quality fit</small>
+                    </div>
+                    <span>Review in editor</span>
+                  </button>
+
+                  <div className={styles.criteriaList}>
+                    {preferredCriteria.map((item) => (
+                      <article key={item.id} className={styles.criterionCard}>
+                        <header className={styles.criterionHeader}>
+                          <div>
+                            <h3 className={styles.criterionTitle}>{item.title}</h3>
+                            <div className={styles.criterionMeta}>
+                              <span className={`${styles.metaPill} ${styles.metaPreferred}`}>Preferred</span>
+                              <span className={`${styles.metaPill} ${item.origin === 'ai' ? styles.metaAi : styles.metaHuman}`}>{item.origin === 'ai' ? 'AI generated' : 'Human reviewed'}</span>
+                              <span className={`${styles.metaPill} ${styles.metaAi}`}>{item.confidence} confidence</span>
+                              <span className={`${styles.metaPill} ${item.reviewState === 'modified' ? styles.metaModified : styles.metaHuman}`}>{item.reviewState === 'modified' ? 'Modified' : 'Human reviewed'}</span>
+                            </div>
+                          </div>
+                          <div className={styles.criterionActions}>
+                            <button type="button" className={editorStyles.textAction} onClick={() => beginEditing(item)}>Edit</button>
+                          </div>
+                        </header>
+
+                        <div className={styles.criterionBody}>
+                          <p className={styles.criterionLabel}>Evaluation basis</p>
+                          <p className={styles.criterionBasis}>{item.basis}</p>
+                          <p className={styles.sourceLine}>Source: {item.sourceSnippet}</p>
+                          {item.notes ? <p className={styles.criterionLabel}>Review note: {item.notes}</p> : null}
+                        </div>
+
+                        {editingCriterionId === item.id && editingDraft ? (
+                          <div className={styles.editorSurface}>
+                            <div className={styles.editorGrid}>
+                              <label className={styles.editorField}>
+                                <span>Criterion title</span>
+                                <input value={editingDraft.title} onChange={(event) => setEditingDraft({ ...editingDraft, title: event.target.value })} />
+                              </label>
+                              <label className={styles.editorField}>
+                                <span>Required / Preferred</span>
+                                <select value={editingDraft.priority} onChange={(event) => setEditingDraft({ ...editingDraft, priority: event.target.value as Priority })}>
+                                  <option value="required">Required</option>
+                                  <option value="preferred">Preferred</option>
+                                </select>
+                              </label>
+                              <label className={`${styles.editorField} ${styles.editorFieldWide}`}>
+                                <span>Evaluation basis</span>
+                                <textarea value={editingDraft.basis} onChange={(event) => setEditingDraft({ ...editingDraft, basis: event.target.value })} />
+                              </label>
+                              <label className={`${styles.editorField} ${styles.editorFieldWide}`}>
+                                <span>Review note</span>
+                                <textarea value={editingDraft.notes} onChange={(event) => setEditingDraft({ ...editingDraft, notes: event.target.value })} placeholder="Add human review rationale" />
+                              </label>
+                            </div>
+                            <div className={styles.editorActions}>
+                              <button type="button" className={editorStyles.secondaryButton} onClick={cancelEditing}>Cancel</button>
+                              <button type="button" className={editorStyles.primaryButtonSmall} onClick={saveEditing}>Save updates</button>
+                            </div>
+                          </div>
+                        ) : null}
+                      </article>
+                    ))}
+
+                    {!preferredCriteria.length ? (
+                      <div className={styles.emptyState}>
+                        <strong>No preferred criteria in this version.</strong>
+                        <p>This version currently contains only required evaluation criteria.</p>
+                      </div>
+                    ) : null}
+                  </div>
+                </article>
+
                 <article className={`${editorStyles.groupCard} ${styles.changesPanel}`}>
                   <button type="button" className={editorStyles.groupToggle} onClick={() => setSelectedVersionId('version-2')}>
                     <div>
@@ -561,6 +734,7 @@ export default function CriteriaApprovalPage() {
                           <span className={`${styles.changePill} ${styles.changePillModified}`}><strong>1</strong> modified</span>
                           <span className={`${styles.changePill} ${styles.changePillReclassified}`}><strong>1</strong> reclassified</span>
                         </div>
+                        <button type="button" className={styles.compareAction} onClick={() => setShowComparisonModal(true)}>Compare with previous version</button>
                         <div className={styles.changeList}>
                           {selectedVersion.changes.map((change) => (
                             <article
@@ -587,23 +761,36 @@ export default function CriteriaApprovalPage() {
                 <section className={styles.stackCard}>
                   <header className={styles.stackHeader}>
                     <div>
-                      <h2>AI validation</h2>
+                      <h2>Validation</h2>
                       <p>VEYQOR validates the criteria before they are approved for candidate assessment.</p>
                     </div>
-                    <span className={`${styles.validationPill} ${approvalStatus === 'blocked' ? styles.validationBlocked : approvalStatus === 'review' ? styles.validationReview : styles.validationReady}`}>{approvalLabel}</span>
+                    <span className={`${styles.validationPill} ${validationState === 'failed' ? styles.validationBlocked : approvalStatus === 'blocked' ? styles.validationBlocked : approvalStatus === 'review' ? styles.validationReview : styles.validationReady}`}>{validationState === 'in-progress' ? 'Validating...' : validationState === 'failed' ? 'Validation failed' : approvalLabel}</span>
                   </header>
 
-                  <div className={styles.validationList}>
-                    {validationItems.map((item) => (
-                      <article key={item.label} className={styles.validationItem}>
-                        <div>
-                          <strong>{item.label}</strong>
-                          <p>{item.detail}</p>
-                        </div>
-                        <span className={`${styles.validationPill} ${item.tone === 'blocked' ? styles.validationBlocked : item.tone === 'review' ? styles.validationReview : item.tone === 'high' ? styles.validationHigh : styles.validationReady}`}>{item.value}</span>
-                      </article>
-                    ))}
-                  </div>
+                  {validationState === 'in-progress' ? (
+                    <div className={styles.emptyState}>
+                      <strong>Validating criteria...</strong>
+                      <p>Running completeness, consistency, and policy checks.</p>
+                    </div>
+                  ) : validationState === 'failed' ? (
+                    <div className={styles.emptyState}>
+                      <strong>Validation could not be completed.</strong>
+                      <p>Retry validation to continue approval checks for this version.</p>
+                      <button type="button" className={styles.secondaryAction} onClick={retryValidation}>Retry validation</button>
+                    </div>
+                  ) : (
+                    <div className={styles.validationList}>
+                      {validationItems.map((item) => (
+                        <article key={item.label} className={styles.validationItem}>
+                          <div>
+                            <strong>{item.label}</strong>
+                            <p>{item.detail}</p>
+                          </div>
+                          <span className={`${styles.validationPill} ${item.tone === 'blocked' ? styles.validationBlocked : item.tone === 'review' ? styles.validationReview : item.tone === 'high' ? styles.validationHigh : styles.validationReady}`}>{item.value}</span>
+                        </article>
+                      ))}
+                    </div>
+                  )}
                 </section>
 
                 <section className={styles.stackCard}>
@@ -627,6 +814,13 @@ export default function CriteriaApprovalPage() {
                         </div>
                       </article>
                     ))}
+
+                    {!openExceptions.length ? (
+                      <div className={styles.emptyState}>
+                        <strong>No exceptions detected.</strong>
+                        <p>All surfaced exceptions for this version have been resolved.</p>
+                      </div>
+                    ) : null}
                   </div>
                 </section>
 
@@ -702,6 +896,13 @@ export default function CriteriaApprovalPage() {
                         <div className={styles.versionCreated}>{version.reviewState}</div>
                       </button>
                     ))}
+
+                    {VERSION_HISTORY.length <= 1 ? (
+                      <div className={styles.emptyState}>
+                        <strong>This is the initial criteria version.</strong>
+                        <p>No earlier version is available for comparison.</p>
+                      </div>
+                    ) : null}
                   </div>
 
                   <div className={styles.versionDetail}>
@@ -770,11 +971,18 @@ export default function CriteriaApprovalPage() {
               </div>
 
               <div className={styles.actionRow}>
-                <button type="button" className={styles.secondaryAction} onClick={() => router.push('/criteria-editor')}>Return for revision</button>
+                <button type="button" className={styles.secondaryAction} onClick={() => setShowReturnModal(true)}>Return for revision</button>
                 <button type="button" className={styles.secondaryAction} onClick={() => beginEditing(requiredCriteria[0] ?? criteria[0])} disabled={approved}>Edit criteria</button>
-                <button type="button" className={styles.primaryAction} onClick={openApprovalModal} disabled={!approvalReady || approved}>
-                  Approve criteria
-                </button>
+                {isAuthorizedApprover ? (
+                  <button type="button" className={styles.primaryAction} onClick={openApprovalModal} disabled={!approvalReady || approved || validationState !== 'ready'}>
+                    Approve criteria
+                  </button>
+                ) : (
+                  <div className={styles.readOnlyNotice}>
+                    <strong>Approval unavailable</strong>
+                    <small>You do not have permission to approve this criteria version.</small>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -792,11 +1000,73 @@ export default function CriteriaApprovalPage() {
               <div className={styles.modalBody}>
                 <strong>Governed decision</strong>
                 <p>Approval is recorded against the active tenant, organisation, version, and operator context.</p>
+                <p>Criteria version: v{selectedVersion.version}</p>
               </div>
 
               <div className={styles.modalActions}>
                 <button type="button" className={styles.secondaryAction} onClick={() => setShowApprovalModal(false)}>Cancel</button>
                 <button type="button" className={styles.primaryAction} onClick={approveCriteria}>Approve criteria</button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {showReturnModal ? (
+          <div className={styles.modalOverlay} role="presentation" onClick={() => setShowReturnModal(false)}>
+            <div className={styles.modalCard} role="dialog" aria-modal="true" aria-label="Return criteria for revision" onClick={(event) => event.stopPropagation()}>
+              <div className={styles.modalHeader}>
+                <p className={editorStyles.kicker}>Revision handoff</p>
+                <h2>Return for revision?</h2>
+                <p>Send this version back to criteria review before approval.</p>
+              </div>
+
+              <div className={styles.modalBody}>
+                <label className={styles.reasonField}>
+                  <span>Why are you returning these criteria? (optional)</span>
+                  <textarea value={returnReason} onChange={(event) => setReturnReason(event.target.value)} placeholder="Add revision guidance for the reviewer" />
+                </label>
+              </div>
+
+              <div className={styles.modalActions}>
+                <button type="button" className={styles.secondaryAction} onClick={() => setShowReturnModal(false)}>Cancel</button>
+                <button type="button" className={styles.primaryAction} onClick={sendBackForRevision}>Return for revision</button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {showComparisonModal ? (
+          <div className={styles.modalOverlay} role="presentation" onClick={() => setShowComparisonModal(false)}>
+            <div className={styles.modalCard} role="dialog" aria-modal="true" aria-label="Version comparison" onClick={(event) => event.stopPropagation()}>
+              <div className={styles.modalHeader}>
+                <p className={editorStyles.kicker}>Version comparison</p>
+                <h2>Version {selectedVersion.version} compared with previous</h2>
+                <p>
+                  {totalChangeCount ? `${totalChangeCount} changes since previous version` : 'No changes from previous version'}
+                </p>
+              </div>
+
+              <div className={styles.compareGrid}>
+                <section className={styles.compareSection}>
+                  <h3>Added</h3>
+                  {groupedChanges.added.length ? groupedChanges.added.map((change) => <p key={change.label}>{change.label}</p>) : <p>None</p>}
+                </section>
+                <section className={styles.compareSection}>
+                  <h3>Modified</h3>
+                  {groupedChanges.modified.length ? groupedChanges.modified.map((change) => <p key={change.label}>{change.label}</p>) : <p>None</p>}
+                </section>
+                <section className={styles.compareSection}>
+                  <h3>Removed</h3>
+                  {groupedChanges.removed.length ? groupedChanges.removed.map((change) => <p key={change.label}>{change.label}</p>) : <p>None</p>}
+                </section>
+                <section className={styles.compareSection}>
+                  <h3>Reclassified</h3>
+                  {groupedChanges.reclassified.length ? groupedChanges.reclassified.map((change) => <p key={change.label}>{change.label}</p>) : <p>None</p>}
+                </section>
+              </div>
+
+              <div className={styles.modalActions}>
+                <button type="button" className={styles.secondaryAction} onClick={() => setShowComparisonModal(false)}>Close</button>
               </div>
             </div>
           </div>

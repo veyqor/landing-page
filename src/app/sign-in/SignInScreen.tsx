@@ -15,6 +15,37 @@ type ScreenError = {
   scope: SignInStep;
 };
 
+type DemoCredential = {
+  label: string;
+  email: string;
+  password: string;
+  mfaCode?: string;
+};
+
+const DEMO_CREDENTIALS: DemoCredential[] = [
+  {
+    label: 'Operator',
+    email: 'operator@veyqor.internal',
+    password: 'Operator#2026',
+  },
+  {
+    label: 'Reviewer',
+    email: 'reviewer@veyqor.internal',
+    password: 'Reviewer#2026',
+  },
+  {
+    label: 'Administrator (MFA)',
+    email: 'admin@veyqor.internal',
+    password: 'Admin#2026',
+    mfaCode: '730241',
+  },
+  {
+    label: 'Leadership',
+    email: 'leadership@veyqor.internal',
+    password: 'Leadership#2026',
+  },
+];
+
 function AlertIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -89,6 +120,7 @@ export default function SignInScreen() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [mfaCode, setMfaCode] = useState('');
+  const [mfaEmail, setMfaEmail] = useState('');
   const [challengeId, setChallengeId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [screenError, setScreenError] = useState<ScreenError | null>(null);
@@ -102,6 +134,20 @@ export default function SignInScreen() {
   const mfaFormValid = mfaCode.trim().length >= 6;
 
   const shouldShowError = screenError?.scope === step;
+
+  function applyDemoCredential(credential: DemoCredential) {
+    if (isSubmitting) {
+      return;
+    }
+
+    setEmail(credential.email);
+    setPassword(credential.password);
+    setStep('credentials');
+    setMfaCode('');
+    setMfaEmail(credential.email);
+    setChallengeId(null);
+    setScreenError(null);
+  }
 
   async function handleCredentialSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -131,6 +177,7 @@ export default function SignInScreen() {
 
     if (result.kind === 'mfa_required') {
       setStep('mfa');
+      setMfaEmail(result.email);
       setChallengeId(result.challengeId);
       setMfaCode('');
       setScreenError(null);
@@ -331,6 +378,25 @@ export default function SignInScreen() {
                         For security and compliance, sign-in activity and session actions are logged and auditable.
                       </p>
                     </div>
+
+                    <section className={styles.demoAccess} aria-label="Demo credentials">
+                      <p className={styles.demoTitle}>Quick demo access</p>
+                      <p className={styles.demoNote}>Use a preloaded account for local prototype access.</p>
+                      <div className={styles.demoGrid}>
+                        {DEMO_CREDENTIALS.map((credential) => (
+                          <button
+                            key={credential.email}
+                            type="button"
+                            className={styles.demoButton}
+                            onClick={() => applyDemoCredential(credential)}
+                            disabled={isSubmitting}
+                          >
+                            <span>{credential.label}</span>
+                            <span>{credential.email}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </section>
                   </form>
                 ) : (
                   <form className={styles.form} onSubmit={handleMfaSubmit} noValidate>
@@ -344,6 +410,9 @@ export default function SignInScreen() {
                     <div className={styles.mfaHeader}>
                       <h3>Verify your sign-in</h3>
                       <p>Enter the 6-digit verification code from your authenticator app.</p>
+                      {mfaEmail === 'admin@veyqor.internal' ? (
+                        <p className={styles.demoMfaHint}>Prototype MFA code for this account: <strong>730241</strong></p>
+                      ) : null}
                     </div>
 
                     <div className={styles.field}>
@@ -383,6 +452,7 @@ export default function SignInScreen() {
                         setStep('credentials');
                         setChallengeId(null);
                         setMfaCode('');
+                        setMfaEmail('');
                         setScreenError(null);
                         setIsSubmitting(false);
                       }}
