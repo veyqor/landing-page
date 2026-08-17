@@ -466,7 +466,10 @@
 }
 
 .intelligencePanel {
-  border-top: 1px solid rgba(240, 186, 62, 0.3);
+  border: 0;
+  border-top: 0;
+  background: transparent;
+  padding: 0;
 }
 
 .intelligenceHeader {
@@ -718,18 +721,32 @@
 
 .listRows {
   margin-top: 8px;
+  padding: 0;
+  list-style: none;
   display: grid;
   gap: 6px;
 }
 
 .listRows li {
+  position: relative;
   border: 1px solid rgba(60, 66, 78, 0.1);
   border-radius: 8px;
   background: #ffffff;
-  padding: 8px;
+  padding: 8px 8px 8px 22px;
   color: #1f2431;
   font-size: 12.8px;
   line-height: 1.4;
+}
+
+.listRows li::before {
+  content: '';
+  position: absolute;
+  top: 14px;
+  left: 10px;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: #3c424e;
 }
 
 .objectiveBand {
@@ -852,6 +869,9 @@
 }
 
 .exceptionsPanel {
+  border: 0;
+  background: transparent;
+  padding: 0;
   animation: intelReveal 240ms ease 320ms both;
 }
 

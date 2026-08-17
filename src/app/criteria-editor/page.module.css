@@ -759,17 +759,31 @@
 }
 
 .sideSubsection ul {
+  padding: 0;
+  list-style: none;
   display: grid;
   gap: 6px;
 }
 
 .sideSubsection li {
+  position: relative;
   border: 1px solid rgba(60, 66, 78, 0.13);
   border-radius: 8px;
-  padding: 7px;
+  padding: 7px 7px 7px 21px;
   color: #3c424e;
   font-size: 12px;
   line-height: 1.45;
+}
+
+.sideSubsection li::before {
+  content: '';
+  position: absolute;
+  top: 13px;
+  left: 9px;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: #3c424e;
 }
 
 .exceptionCount {

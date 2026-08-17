@@ -56,6 +56,7 @@ type SignalState = {
 
 const TENANT_STORAGE_KEY = 'veyqor.mock.tenant-context.v1';
 const ORG_STORAGE_KEY = 'veyqor.mock.org-context.v1';
+const CASE_CONTEXT_STORAGE_KEY = 'veyqor.mock.case-context.v1';
 
 const SUPPORTED_TYPES = [
   'application/pdf',
@@ -302,6 +303,20 @@ export default function JobSignalIntakePage() {
     if (!canGenerateCriteria) {
       return;
     }
+
+    const sourceMoment = sourceTimestamp ? new Date(sourceTimestamp) : new Date();
+    const hh = `${sourceMoment.getHours()}`.padStart(2, '0');
+    const mm = `${sourceMoment.getMinutes()}`.padStart(2, '0');
+    const generatedCaseId = `Case #VQ-${hh}${mm}`;
+    const jobTitle = signals?.role.title?.trim() || structuredRoleTitle.trim() || 'Senior Frontend Engineer';
+
+    window.localStorage.setItem(
+      CASE_CONTEXT_STORAGE_KEY,
+      JSON.stringify({
+        jobTitle,
+        caseId: generatedCaseId,
+      })
+    );
 
     router.push('/criteria-editor');
   }
