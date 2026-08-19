@@ -178,7 +178,7 @@ export default function ProvenanceProcessingPage() {
     const org = tenant?.organisations.find((item) => item.id === selectedOrgId) ?? tenant?.organisations[0] ?? null;
 
     if (!tenant || !org) {
-      router.replace('/org-context');
+      router.replace('/sign-in');
       return;
     }
 

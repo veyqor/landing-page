@@ -1,0 +1,861 @@
+/* CANDIDATE PROCESSING & ELIGIBILITY RESULTS STYLES */
+
+.page {
+  min-height: 100dvh;
+}
+
+.contentContainer {
+  padding: 0 0 60px;
+  display: grid;
+  gap: 24px;
+  max-width: 1140px;
+  margin: 0 auto;
+}
+
+/* HEADER SECTION */
+.pageHeader {
+  display: grid;
+  gap: 12px;
+}
+
+.headerTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.kicker {
+  font-family: var(--font-ibm-mono), monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: #d97706; /* VEYQOR Gold */
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.mainTitle {
+  font-size: 30px;
+  font-weight: 700;
+  color: #10131d;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.mainSubtitle {
+  color: #525a6b;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-top: 6px;
+  max-width: 680px;
+}
+
+/* STATUS BADGES & CONTEXT */
+.badgeRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.statusBadgeProcessing {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(124, 58, 237, 0.08);
+  border: 1px solid rgba(124, 58, 237, 0.24);
+  color: #5b21b6;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.pulseDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #7c3aed;
+  box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.4);
+  animation: pulse 1.6s infinite;
+}
+
+.statusBadgeComplete {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.24);
+  color: #047857;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.privacyBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f8fafc;
+  border: 1px solid rgba(60, 66, 78, 0.12);
+  color: #475569;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.approvedCriteriaLink {
+  color: #d97706;
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 12px;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.approvedCriteriaLink:hover {
+  text-decoration: underline;
+}
+
+/* STATE TOGGLE BAR (FOR EASY DEMO / VERIFICATION) */
+.stateToggleBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(60, 66, 78, 0.04);
+  padding: 4px;
+  border-radius: 10px;
+  width: fit-content;
+}
+
+.stateToggleBtn {
+  border: none;
+  background: transparent;
+  padding: 6px 14px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #525a6b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.stateToggleBtnActive {
+  background: #ffffff;
+  color: #10131d;
+  box-shadow: 0 2px 8px rgba(16, 19, 29, 0.08);
+}
+
+/* MAIN LAYOUT GRID */
+.layoutGrid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 24px;
+  align-items: start;
+}
+
+.mainColumn {
+  display: grid;
+  gap: 24px;
+}
+
+.sideColumn {
+  display: grid;
+  gap: 20px;
+}
+
+/* SECTION CARDS */
+.card {
+  background: #ffffff;
+  border: 1px solid rgba(60, 66, 78, 0.12);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(16, 19, 29, 0.03);
+  display: grid;
+  gap: 20px;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.cardTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #10131d;
+}
+
+.cardDesc {
+  font-size: 13px;
+  color: #525a6b;
+  margin-top: 4px;
+}
+
+/* PROGRESS & STAGES (PROCESSING STATE) */
+.progressWrap {
+  display: grid;
+  gap: 8px;
+}
+
+.progressLabelRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #10131d;
+}
+
+.progressBarTrack {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(60, 66, 78, 0.1);
+  overflow: hidden;
+}
+
+.progressBarFill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #7c3aed, #d97706);
+  transition: width 0.4s ease;
+}
+
+.stagesList {
+  display: grid;
+  gap: 14px;
+  padding-top: 8px;
+}
+
+.stageItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13.5px;
+}
+
+.stageCompleted {
+  color: #047857;
+  font-weight: 600;
+}
+
+.stageActive {
+  color: #5b21b6;
+  font-weight: 600;
+}
+
+.stagePending {
+  color: #9ca3af;
+}
+
+.stageIconCompleted {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.stageIconActive {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(124, 58, 237, 0.12);
+  color: #7c3aed;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+}
+
+.stageIconPending {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid rgba(60, 66, 78, 0.16);
+  color: #9ca3af;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+}
+
+/* PROCESSING COUNTERS */
+.counterGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.counterBox {
+  background: #f8fafc;
+  border: 1px solid rgba(60, 66, 78, 0.08);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.counterNumber {
+  font-size: 22px;
+  font-weight: 700;
+  color: #10131d;
+  line-height: 1.1;
+}
+
+.counterLabel {
+  font-size: 11px;
+  color: #64748b;
+  font-family: var(--font-ibm-mono), monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ELIGIBILITY OVERVIEW (COMPLETED STATE) */
+.eligibilityGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.eligibilityCard {
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid transparent;
+  transition: transform 0.15s ease;
+}
+
+.eligibilityCard:hover {
+  transform: translateY(-2px);
+}
+
+.cardEligible {
+  background: rgba(16, 185, 129, 0.06);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.cardPotential {
+  background: rgba(217, 119, 6, 0.06);
+  border-color: rgba(217, 119, 6, 0.2);
+}
+
+.cardAttention {
+  background: rgba(239, 68, 68, 0.06);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.eligibilityHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.eligibilityCount {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.countEligible { color: #047857; }
+.countPotential { color: #b45309; }
+.countAttention { color: #b42318; }
+
+.eligibilityBadge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-family: var(--font-ibm-mono), monospace;
+}
+
+.badgeEligible { background: rgba(16, 185, 129, 0.14); color: #047857; }
+.badgePotential { background: rgba(217, 119, 6, 0.14); color: #b45309; }
+.badgeAttention { background: rgba(239, 68, 68, 0.14); color: #b42318; }
+
+.eligibilityTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #10131d;
+}
+
+.eligibilityDesc {
+  font-size: 12px;
+  color: #525a6b;
+  line-height: 1.45;
+}
+
+/* EXCEPTION FIRST UX LIST */
+.exceptionCard {
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: rgba(254, 242, 242, 0.5);
+  border-radius: 14px;
+  padding: 20px;
+  display: grid;
+  gap: 16px;
+}
+
+.exceptionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.exceptionTitleArea h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #991b1b;
+}
+
+.exceptionTitleArea p {
+  font-size: 12.5px;
+  color: #7f1d1d;
+  margin-top: 2px;
+}
+
+.exceptionBadge {
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.exceptionList {
+  display: grid;
+  gap: 8px;
+}
+
+.exceptionItem {
+  background: #ffffff;
+  border: 1px solid rgba(239, 68, 68, 0.14);
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.exceptionItemLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.exceptionItemCode {
+  font-weight: 700;
+  font-size: 13px;
+  color: #10131d;
+}
+
+.exceptionItemDesc {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.secondaryExceptionBtn {
+  background: transparent;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #b42318;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.secondaryExceptionBtn:hover {
+  background: rgba(239, 68, 68, 0.08);
+}
+
+/* CANDIDATE PREVIEW LIST */
+.previewList {
+  display: grid;
+  gap: 10px;
+}
+
+.previewRow {
+  background: #ffffff;
+  border: 1px solid rgba(60, 66, 78, 0.1);
+  border-radius: 12px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background 0.15s ease;
+}
+
+.previewRow:hover {
+  background: #f8fafc;
+}
+
+.previewLeft {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.previewAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #334155;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.previewName {
+  font-size: 14px;
+  font-weight: 600;
+  color: #10131d;
+}
+
+.previewRole {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 1px;
+}
+
+.previewRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.previewMatchNote {
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* ACTION BUTTONS */
+.primaryGoldButton {
+  min-height: 46px;
+  padding: 0 26px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.35);
+  transition: all 0.2s ease;
+  width: fit-content;
+}
+
+.primaryGoldButton:hover {
+  background: linear-gradient(135deg, #b45309 0%, #92400e 100%);
+  box-shadow: 0 6px 20px rgba(217, 119, 6, 0.45);
+  transform: translateY(-1px);
+}
+
+.secondaryOutlineButton {
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 10px;
+  background: transparent;
+  color: #525a6b;
+  font-weight: 600;
+  font-size: 13px;
+  border: 1px solid rgba(60, 66, 78, 0.18);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.secondaryOutlineButton:hover {
+  background: rgba(60, 66, 78, 0.05);
+  color: #10131d;
+}
+
+.actionsRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+/* RIGHT COLUMN PANEL ("VEYQOR handles the rest") */
+.reassuranceSideCard {
+  background: #fffdf5;
+  border: 1px solid rgba(217, 119, 6, 0.2);
+  border-radius: 16px;
+  padding: 20px;
+  display: grid;
+  gap: 12px;
+}
+
+.reassuranceSideHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.reassuranceSideTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #78350f;
+}
+
+.reassuranceSideText {
+  font-size: 12.5px;
+  color: #92400e;
+  line-height: 1.5;
+}
+
+.leaveNoticeBox {
+  background: #ffffff;
+  border: 1px solid rgba(60, 66, 78, 0.12);
+  border-radius: 14px;
+  padding: 18px;
+  display: grid;
+  gap: 10px;
+}
+
+.leaveNoticeTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #10131d;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.leaveNoticeText {
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+/* EMPTY STATE */
+.emptyCard {
+  background: #ffffff;
+  border: 1px dashed rgba(60, 66, 78, 0.2);
+  border-radius: 16px;
+  padding: 48px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.emptyTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #10131d;
+}
+
+.emptyDesc {
+  font-size: 13.5px;
+  color: #525a6b;
+  max-width: 400px;
+  line-height: 1.5;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(124, 58, 237, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0); }
+}
+
+/* NOTIFICATION TOGGLE CARD */
+.notificationCard {
+  border: 1px solid rgba(124, 58, 237, 0.18);
+  border-radius: 14px;
+  background: rgba(124, 58, 237, 0.03);
+  padding: 20px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.notificationCardLeft {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.notificationCardIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(124, 58, 237, 0.12);
+  color: #7c3aed;
+  display: grid;
+  place-items: center;
+  font-size: 17px;
+  flex-shrink: 0;
+}
+
+.notificationCardTitle {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #10131d;
+  margin-bottom: 2px;
+}
+
+.notificationCardDesc {
+  font-size: 13px;
+  color: #525a6b;
+  line-height: 1.4;
+}
+
+/* TOGGLE SWITCH COMPONENT */
+.toggleSwitch {
+  width: 46px;
+  height: 26px;
+  border-radius: 999px;
+  background: #cbd5e1;
+  position: relative;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+  transition: background 0.2s ease;
+  flex-shrink: 0;
+}
+
+.toggleSwitchOn {
+  background: #7c3aed;
+}
+
+.toggleThumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: #ffffff;
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  transition: transform 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.toggleThumbOn {
+  transform: translateX(20px);
+}
+
+/* LEAVE REASSURANCE BANNER */
+.leaveBanner {
+  border: 1px solid rgba(60, 66, 78, 0.12);
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 20px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.leaveBannerLeft {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.leaveBannerIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #f1f5f9;
+  color: #475569;
+  display: grid;
+  place-items: center;
+  font-size: 17px;
+  flex-shrink: 0;
+}
+
+.leaveBannerTitle {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #10131d;
+  margin-bottom: 2px;
+}
+
+.leaveBannerDesc {
+  font-size: 13px;
+  color: #525a6b;
+  line-height: 1.4;
+}
+
+.backDashboardBtn {
+  border: 1px solid rgba(60, 66, 78, 0.18);
+  border-radius: 10px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 10px 18px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.backDashboardBtn:hover {
+  background: #f8fafc;
+  border-color: rgba(60, 66, 78, 0.3);
+  color: #10131d;
+}
+
+/* PATH BADGE (SOURCING VS UPLOAD) */
+.pathPill {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #475569;
+  background: #f1f5f9;
+  padding: 3px 10px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* RESPONSIVE DESIGN */
+@media (max-width: 1060px) {
+  .layoutGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .mainTitle {
+    font-size: 24px;
+  }
+
+  .eligibilityGrid,
+  .counterGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .actionsRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .primaryGoldButton {
+    width: 100%;
+  }
+}
