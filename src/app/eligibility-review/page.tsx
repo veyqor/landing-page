@@ -4,96 +4,271 @@ import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { mockAuthGateway, type AuthSession } from '@/lib/auth/mockAuthGateway';
+import intakeStyles from '../job-intake/page.module.css';
 import styles from './page.module.css';
 
-const TENANT_STORAGE_KEY = 'veyqor.mock.tenant-context.v1';
-const ORG_STORAGE_KEY = 'veyqor.mock.org-context.v1';
-const CASE_CONTEXT_STORAGE_KEY = 'veyqor.mock.case-context.v1';
-const CANDIDATE_BATCH_STORAGE_KEY = 'veyqor.mock.candidate-intake.batch.v1';
-const NEXT_STAGE_ROUTE = '/ai-sanitisation';
+type NavItem = {
+  id: string;
+  label: string;
+  href: string;
+};
+
+type MatchCategory = 'recommended' | 'potential' | 'attention';
+
+type Candidate = {
+  id: string;
+  code: string;
+  name: string;
+  initials: string;
+  role: string;
+  experience: string;
+  skills: string[];
+  matchScore: number;
+  matchCategory: MatchCategory;
+  requiredCriteriaResult: string;
+  confidence: string;
+  shortlisted: boolean;
+  whyRecommended: string;
+  criteriaChecklist: {
+    id: string;
+    title: string;
+    status: 'passed' | 'attention';
+    desc: string;
+    evidence?: string;
+  }[];
+  attentionReason?: string;
+};
 
 const WORKFLOW_STEPS = [
-  'Criteria Approval',
+  'Signal Intake',
+  'Criteria',
+  'Approval',
   'Candidate Intake',
-  'Quarantine',
-  'Provenance',
-  'Eligibility',
-  'AI Evaluation',
-] as const;
+  'Processing',
+  'Review',
+];
 
-type CaseContext = {
-  jobTitle: string;
-  caseId: string;
-  criteriaVersion: string;
-};
+const NAV_ITEMS: NavItem[] = [
+  { id: 'dashboard', label: 'Dashboard', href: '/dashboard' },
+  { id: 'cases', label: 'Cases', href: '#' },
+  { id: 'review', label: 'Review queues', href: '#' },
+  { id: 'notifications', label: 'Notifications', href: '#' },
+  { id: 'audit', label: 'Audit', href: '#' },
+  { id: 'settings', label: 'Settings', href: '#' },
+];
 
-type IntakeBatchItem = {
-  id: string;
-  fileName: string;
-  candidateName: string;
-  fileType: string;
-  source: string;
-  status: string;
-  detail: string;
-  recordedAt: string;
-};
-
-type EligibilityStatus =
-  | 'pending'
-  | 'processing'
-  | 'eligible'
-  | 'requires_attention'
-  | 'ineligible'
-  | 'blocked';
-
-type CheckStatus = 'passed' | 'attention' | 'blocked' | 'pending' | 'processing';
-
-type GateState =
-  | 'pending'
-  | 'processing'
-  | 'eligible'
-  | 'requires_attention'
-  | 'ineligible'
-  | 'blocked'
-  | 'partial_success'
-  | 'completed'
-  | 'permission_denied';
-
-type EligibilityReason =
-  | 'all_checks_passed'
-  | 'required_information_missing'
-  | 'conflicting_information'
-  | 'policy_review_required'
-  | 'invalid_processing_context'
-  | 'mandatory_rule_not_satisfied'
-  | 'workflow_blocking_condition'
-  | 'assessment_in_progress';
-
-type CandidateRecord = {
-  id: string;
-  candidateIdentifier: string;
-  candidateName: string;
-  source: string;
-  eligibility: EligibilityStatus;
-  reason: EligibilityReason;
-  checks: {
-    requiredInformation: CheckStatus;
-    provenance: CheckStatus;
-    processingPurpose: CheckStatus;
-    policy: CheckStatus;
-    eligibilityRule: CheckStatus;
-  };
-  updatedAt: string;
-  criteriaVersion: string;
-  restrictedInfo: boolean;
-  auditEvents: string[];
-};
-
-type AutomationState = 'assessing' | 'completed' | 'attention_required' | 'blocked';
-
-type EligibilityFilter = 'all' | EligibilityStatus;
-type ProcessingFilter = 'all' | 'active' | 'completed';
-type QueueNoticeTone = 'neutral' | 'success' | 'warning' | 'error';
+const INITIAL_CANDIDATES: Candidate[] = [
+  {
+    id: 'cand-024',
+    code: 'Candidate 024',
+    name: 'Alexandre Morgan',
+    initials: 'AM',
+    role: 'Senior Product Designer',
+    experience: '8+ years experience',
+    skills: ['Product systems', 'SaaS', 'Design systems', 'Cross-functional leadership', 'Figma', 'TypeScript'],
+    matchScore: 94,
+    matchCategory: 'recommended',
+    requiredCriteriaResult: '5 / 5 required criteria',
+    confidence: 'High confidence',
+    shortlisted: true,
+    whyRecommended: 'Strong evidence of leading product systems across enterprise SaaS products, with demonstrated cross-functional leadership and delivery impact.',
+    criteriaChecklist: [
+      {
+        id: 'c1',
+        title: 'Qualification & Background',
+        status: 'passed',
+        desc: 'B.Sc in Human-Computer Interaction & 8+ years leading enterprise product design teams.',
+        evidence: 'Verified transcript from University of Waterloo & verified reference from Stripe design leadership.',
+      },
+      {
+        id: 'c2',
+        title: 'Technical capability & Systems design',
+        status: 'passed',
+        desc: 'Hands-on experience with TypeScript, React component libraries, and tokenized design systems.',
+        evidence: 'Authored multi-brand design tokens used across 14 product modules at previous enterprise role.',
+      },
+      {
+        id: 'c3',
+        title: 'Domain experience (B2B SaaS)',
+        status: 'passed',
+        desc: '6+ years designing complex workflow interfaces for governance and compliance platforms.',
+        evidence: 'Led redesign of workflow intake module resulting in 42% faster decision turnaround.',
+      },
+      {
+        id: 'c4',
+        title: 'Product design leadership',
+        status: 'passed',
+        desc: 'Mentored 5 junior designers and established cross-functional design review standards.',
+      },
+      {
+        id: 'c5',
+        title: 'Policy & security alignment',
+        status: 'passed',
+        desc: 'Full compliance with data privacy regulations and role access control standards.',
+      },
+    ],
+  },
+  {
+    id: 'cand-012',
+    code: 'Candidate 012',
+    name: 'Elena Rostova',
+    initials: 'ER',
+    role: 'Lead Product Designer',
+    experience: '9+ years experience',
+    skills: ['Design systems', 'UX Architecture', 'B2B Platforms', 'Prototyping', 'Accessibility'],
+    matchScore: 91,
+    matchCategory: 'recommended',
+    requiredCriteriaResult: '5 / 5 required criteria',
+    confidence: 'High confidence',
+    shortlisted: false,
+    whyRecommended: 'Extensive track record of architecting scalable design systems for financial and recruiting software.',
+    criteriaChecklist: [
+      {
+        id: 'c1',
+        title: 'Qualification & Background',
+        status: 'passed',
+        desc: 'Master of Fine Arts in Digital Design. 9+ years industry practice.',
+      },
+      {
+        id: 'c2',
+        title: 'Technical capability',
+        status: 'passed',
+        desc: 'Proficient in CSS architecture, Web Components, and React prototyping.',
+      },
+      {
+        id: 'c3',
+        title: 'Domain experience',
+        status: 'passed',
+        desc: 'Designed enterprise hiring intake portals and candidate workflow systems.',
+      },
+    ],
+  },
+  {
+    id: 'cand-038',
+    code: 'Candidate 038',
+    name: 'Marcus Vance',
+    initials: 'MV',
+    role: 'Staff Product Architect',
+    experience: '10+ years experience',
+    skills: ['Enterprise SaaS', 'Complex workflows', 'User Research', 'Design Operations'],
+    matchScore: 89,
+    matchCategory: 'recommended',
+    requiredCriteriaResult: '5 / 5 required criteria',
+    confidence: 'High confidence',
+    shortlisted: false,
+    whyRecommended: 'Deep experience designing high-throughput administrative platforms with strict audit requirements.',
+    criteriaChecklist: [
+      {
+        id: 'c1',
+        title: 'Qualification & Background',
+        status: 'passed',
+        desc: 'B.Sc Computer Science & 10 years experience.',
+      },
+    ],
+  },
+  {
+    id: 'cand-019',
+    code: 'Candidate 019',
+    name: 'Sophia Chen',
+    initials: 'SC',
+    role: 'Senior UI/UX Specialist',
+    experience: '6+ years experience',
+    skills: ['Figma', 'UI Animation', 'Design Tokens', 'User Testing'],
+    matchScore: 85,
+    matchCategory: 'potential',
+    requiredCriteriaResult: '4 / 5 required criteria',
+    confidence: 'Medium confidence',
+    shortlisted: false,
+    whyRecommended: 'Strong UI craft and visual polish; requires minor verification on complex backend workflow depth.',
+    criteriaChecklist: [
+      {
+        id: 'c1',
+        title: 'Qualification & Background',
+        status: 'passed',
+        desc: 'B.A. Graphic Communication.',
+      },
+      {
+        id: 'c2',
+        title: 'Domain experience',
+        status: 'attention',
+        desc: 'Primary background in consumer fintech rather than B2B compliance software.',
+      },
+    ],
+  },
+  {
+    id: 'cand-008',
+    code: 'Candidate 008',
+    name: 'David Kalu',
+    initials: 'DK',
+    role: 'Senior Product Designer',
+    experience: '7+ years experience',
+    skills: ['Product Strategy', 'Design Systems', 'Micro-interactions'],
+    matchScore: 78,
+    matchCategory: 'attention',
+    requiredCriteriaResult: '3 / 5 required criteria',
+    confidence: 'Requires review',
+    shortlisted: false,
+    attentionReason: 'Qualification evidence unclear',
+    whyRecommended: 'Solid experience portfolio, but degree credentials require manual verification.',
+    criteriaChecklist: [
+      {
+        id: 'c1',
+        title: 'Qualification & Background',
+        status: 'attention',
+        desc: 'Submitted transcript document quality requires manual review before final approval.',
+        evidence: 'Document scan has low contrast on university seal.',
+      },
+    ],
+  },
+  {
+    id: 'cand-031',
+    code: 'Candidate 031',
+    name: 'Tariq Al-Mansoor',
+    initials: 'TA',
+    role: 'UX Designer & Researcher',
+    experience: '5–8 years experience',
+    skills: ['User Research', 'Prototyping', 'Usability Testing'],
+    matchScore: 76,
+    matchCategory: 'attention',
+    requiredCriteriaResult: '4 / 5 required criteria',
+    confidence: 'Requires review',
+    shortlisted: false,
+    attentionReason: 'Experience range ambiguous',
+    whyRecommended: 'Strong user research skills; resume lists overlapping freelance and full-time dates.',
+    criteriaChecklist: [
+      {
+        id: 'c1',
+        title: 'Experience floor verification',
+        status: 'attention',
+        desc: 'Overlapping timeline dates between contract and full-time roles require clarification.',
+      },
+    ],
+  },
+  {
+    id: 'cand-064',
+    code: 'Candidate 064',
+    name: 'Rachel Adams',
+    initials: 'RA',
+    role: 'Senior Product Designer',
+    experience: '6+ years experience',
+    skills: ['Design Systems', 'SaaS', 'Figma'],
+    matchScore: 74,
+    matchCategory: 'attention',
+    requiredCriteriaResult: '3 / 5 required criteria',
+    confidence: 'Requires review',
+    shortlisted: false,
+    attentionReason: 'Document quality issue',
+    whyRecommended: 'Work samples demonstrate strong design quality; document formatting was partially unparseable.',
+    criteriaChecklist: [
+      {
+        id: 'c1',
+        title: 'Document integrity',
+        status: 'attention',
+        desc: 'Page 3 of submitted PDF contains unformatted text fragments.',
+      },
+    ],
+  },
+];
 
 function roleLabel(role: AuthSession['role']) {
   if (role === 'administrator') return 'Administrator';
@@ -102,172 +277,33 @@ function roleLabel(role: AuthSession['role']) {
   return 'Recruitment Operator';
 }
 
-function canResolve(role: AuthSession['role']) {
-  return role === 'operator' || role === 'reviewer' || role === 'administrator';
+function ShellIcon({ id }: { id: NavItem['id'] }) {
+  if (id === 'dashboard') return <span aria-hidden="true">⌂</span>;
+  if (id === 'cases') return <span aria-hidden="true">◫</span>;
+  if (id === 'review') return <span aria-hidden="true">◎</span>;
+  if (id === 'notifications') return <span aria-hidden="true">◉</span>;
+  if (id === 'audit') return <span aria-hidden="true">◌</span>;
+  return <span aria-hidden="true">⚙</span>;
 }
 
-function canContinue(role: AuthSession['role']) {
-  return role === 'operator' || role === 'reviewer' || role === 'administrator';
-}
-
-function normalizeStatus(raw: string, fileName: string) {
-  const status = raw.trim().toLowerCase();
-  if (status === 'invalid') return 'blocked';
-  if (status === 'failed') return 'blocked';
-  if (status === 'requires_attention') return 'requires_attention';
-  if (status === 'duplicate') return 'requires_attention';
-  if (status === 'ready') return 'cleared';
-  if (status === 'processing') return 'processing';
-  if (status === 'validating') return 'validating';
-  if (status === 'quarantined') return 'quarantined';
-  if (status === 'uploading') return 'uploading';
-  if (fileName.toLowerCase().includes('blocked')) return 'blocked';
-  if (fileName.toLowerCase().includes('conflict')) return 'requires_attention';
-  return 'queued';
-}
-
-function reasonLabel(reason: EligibilityReason) {
-  if (reason === 'all_checks_passed') return 'All required eligibility checks have passed.';
-  if (reason === 'required_information_missing') return 'Required candidate information is incomplete.';
-  if (reason === 'conflicting_information') return 'Candidate information is conflicting across submitted records.';
-  if (reason === 'policy_review_required') return 'A configured policy requires human confirmation.';
-  if (reason === 'invalid_processing_context') return 'Processing context is not valid for this case.';
-  if (reason === 'mandatory_rule_not_satisfied') return 'One or more mandatory eligibility conditions are not satisfied.';
-  if (reason === 'workflow_blocking_condition') return 'A blocking policy condition prevents safe continuation.';
-  return 'VEYQOR is still completing required checks.';
-}
-
-function displayStatus(status: EligibilityStatus) {
-  if (status === 'eligible') return 'Eligible';
-  if (status === 'requires_attention') return 'Requires attention';
-  if (status === 'ineligible') return 'Ineligible';
-  if (status === 'blocked') return 'Blocked';
-  if (status === 'processing') return 'Processing';
-  return 'Pending';
-}
-
-function checkLabel(status: CheckStatus) {
-  if (status === 'passed') return 'Passed';
-  if (status === 'attention') return 'Attention';
-  if (status === 'blocked') return 'Blocked';
-  if (status === 'processing') return 'Processing';
-  return 'Pending';
-}
-
-function toCandidateIdentifier(id: string) {
-  return `Candidate ${id.slice(-4).toUpperCase()}`;
-}
-
-function buildInitialCandidate(item: IntakeBatchItem, criteriaVersion: string, restrictIdentity: boolean): CandidateRecord {
-  const normalizedStatus = normalizeStatus(item.status, item.fileName);
-
-  if (normalizedStatus === 'blocked') {
-    return {
-      id: item.id,
-      candidateIdentifier: toCandidateIdentifier(item.id),
-      candidateName: item.candidateName,
-      source: item.source,
-      eligibility: 'blocked',
-      reason: 'workflow_blocking_condition',
-      checks: {
-        requiredInformation: 'blocked',
-        provenance: 'passed',
-        processingPurpose: 'passed',
-        policy: 'blocked',
-        eligibilityRule: 'blocked',
-      },
-      updatedAt: item.recordedAt || new Date().toLocaleString(),
-      criteriaVersion,
-      restrictedInfo: restrictIdentity,
-      auditEvents: ['Eligibility assessment started', 'Blocking policy condition detected', 'Candidate blocked from progression'],
-    };
-  }
-
-  if (normalizedStatus === 'requires_attention') {
-    return {
-      id: item.id,
-      candidateIdentifier: toCandidateIdentifier(item.id),
-      candidateName: item.candidateName,
-      source: item.source,
-      eligibility: 'requires_attention',
-      reason: item.fileName.toLowerCase().includes('conflict') ? 'conflicting_information' : 'policy_review_required',
-      checks: {
-        requiredInformation: 'attention',
-        provenance: 'passed',
-        processingPurpose: 'passed',
-        policy: 'attention',
-        eligibilityRule: 'attention',
-      },
-      updatedAt: item.recordedAt || new Date().toLocaleString(),
-      criteriaVersion,
-      restrictedInfo: restrictIdentity,
-      auditEvents: ['Eligibility assessment started', 'Exception raised', 'Human review required'],
-    };
-  }
-
-  if (normalizedStatus === 'cleared') {
-    return {
-      id: item.id,
-      candidateIdentifier: toCandidateIdentifier(item.id),
-      candidateName: item.candidateName,
-      source: item.source,
-      eligibility: 'processing',
-      reason: 'assessment_in_progress',
-      checks: {
-        requiredInformation: 'processing',
-        provenance: 'passed',
-        processingPurpose: 'passed',
-        policy: 'processing',
-        eligibilityRule: 'processing',
-      },
-      updatedAt: item.recordedAt || new Date().toLocaleString(),
-      criteriaVersion,
-      restrictedInfo: restrictIdentity,
-      auditEvents: ['Eligibility assessment started', 'Rule evaluation in progress'],
-    };
-  }
-
-  return {
-    id: item.id,
-    candidateIdentifier: toCandidateIdentifier(item.id),
-    candidateName: item.candidateName,
-    source: item.source,
-    eligibility: 'pending',
-    reason: 'assessment_in_progress',
-    checks: {
-      requiredInformation: 'pending',
-      provenance: 'pending',
-      processingPurpose: 'pending',
-      policy: 'pending',
-      eligibilityRule: 'pending',
-    },
-    updatedAt: item.recordedAt || new Date().toLocaleString(),
-    criteriaVersion,
-    restrictedInfo: restrictIdentity,
-    auditEvents: ['Eligibility assessment queued'],
-  };
-}
-
-export default function EligibilityReviewPage() {
+export default function CandidateReviewPage() {
   const router = useRouter();
 
   const [session, setSession] = useState<AuthSession | null>(null);
   const [tenantName, setTenantName] = useState('');
   const [orgName, setOrgName] = useState('');
-  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
-  const [caseContext, setCaseContext] = useState<CaseContext>({
-    jobTitle: 'Senior Frontend Engineer',
-    caseId: 'Case #VQ-1042',
-    criteriaVersion: 'v2',
-  });
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-  const [candidates, setCandidates] = useState<CandidateRecord[]>([]);
-  const [eligibilityFilter, setEligibilityFilter] = useState<EligibilityFilter>('all');
-  const [reasonFilter, setReasonFilter] = useState<EligibilityReason | 'all'>('all');
-  const [processingFilter, setProcessingFilter] = useState<ProcessingFilter>('all');
-  const [search, setSearch] = useState('');
-  const [activeCandidateId, setActiveCandidateId] = useState<string | null>(null);
+  const [candidates, setCandidates] = useState<Candidate[]>(INITIAL_CANDIDATES);
+  const [activeTab, setActiveTab] = useState<MatchCategory>('recommended');
+  const [sortOption, setSortOption] = useState<'strongest' | 'experience' | 'recent'>('strongest');
+
+  const [selectedCandidateIds, setSelectedCandidateIds] = useState<Set<string>>(new Set());
+  const [activeDrawerCandidate, setActiveDrawerCandidate] = useState<Candidate | null>(null);
+  const [drawerTab, setDrawerTab] = useState<'overview' | 'profile' | 'evidence' | 'files'>('overview');
+  const [expandedEvidenceId, setExpandedEvidenceId] = useState<string | null>(null);
 
   useEffect(() => {
     const activeSession = mockAuthGateway.getSession();
@@ -275,859 +311,560 @@ export default function EligibilityReviewPage() {
       router.replace('/sign-in');
       return;
     }
-
     setSession(activeSession);
-
-    const selectedTenantId = window.localStorage.getItem(TENANT_STORAGE_KEY) ?? '';
-    const selectedOrgId = window.localStorage.getItem(ORG_STORAGE_KEY) ?? '';
-    const tenant = activeSession.workspaceTenants.find((item) => item.id === selectedTenantId) ?? activeSession.workspaceTenants[0] ?? null;
-    const org = tenant?.organisations.find((item) => item.id === selectedOrgId) ?? tenant?.organisations[0] ?? null;
-
-    if (!tenant || !org) {
-      router.replace('/org-context');
-      return;
-    }
-
-    setTenantName(tenant.name);
-    setOrgName(org.name);
-
-    let resolvedCaseContext: CaseContext = {
-      jobTitle: 'Senior Frontend Engineer',
-      caseId: 'Case #VQ-1042',
-      criteriaVersion: 'v2',
-    };
-
-    const rawContext = window.localStorage.getItem(CASE_CONTEXT_STORAGE_KEY);
-    if (rawContext) {
-      try {
-        const parsed = JSON.parse(rawContext) as Partial<CaseContext>;
-        const nextJobTitle = parsed.jobTitle?.trim();
-        const nextCaseId = parsed.caseId?.trim();
-        const nextVersion = parsed.criteriaVersion?.trim() ?? 'v2';
-        if (nextJobTitle && nextCaseId) {
-          resolvedCaseContext = { jobTitle: nextJobTitle, caseId: nextCaseId, criteriaVersion: nextVersion };
-        }
-      } catch {
-        // Keep fallback context for malformed payload.
-      }
-    }
-
-    setCaseContext(resolvedCaseContext);
-
-    const rawBatch = window.localStorage.getItem(CANDIDATE_BATCH_STORAGE_KEY);
-    if (!rawBatch) {
-      setCandidates([]);
-      return;
-    }
-
-    try {
-      const restrictIdentity = activeSession.role === 'leadership';
-      const batch = JSON.parse(rawBatch) as IntakeBatchItem[];
-      const transformed = batch.map((item) => buildInitialCandidate(item, resolvedCaseContext.criteriaVersion, restrictIdentity));
-      setCandidates(transformed);
-    } catch {
-      setCandidates([]);
-    }
+    setTenantName('Acme Global Operations');
+    setOrgName('Product & Engineering Workspace');
   }, [router]);
 
-  useEffect(() => {
-    const hasInFlight = candidates.some((candidate) => candidate.eligibility === 'pending' || candidate.eligibility === 'processing');
-    if (!hasInFlight) {
-      return;
-    }
-
-    const timer = window.setInterval(() => {
-      setCandidates((current) =>
-        current.map((candidate) => {
-          if (candidate.eligibility === 'pending') {
-            return {
-              ...candidate,
-              eligibility: 'processing',
-              reason: 'assessment_in_progress',
-              checks: {
-                ...candidate.checks,
-                requiredInformation: 'processing',
-                provenance: 'passed',
-                processingPurpose: 'passed',
-                policy: 'processing',
-                eligibilityRule: 'processing',
-              },
-              updatedAt: 'Just now',
-              auditEvents: [...candidate.auditEvents, 'Eligibility checks started'],
-            };
-          }
-
-          if (candidate.eligibility === 'processing') {
-            const source = candidate.source.trim().toLowerCase();
-            const needsAttention = source === 'other';
-            const isIneligible = source === 'agency';
-
-            if (isIneligible) {
-              return {
-                ...candidate,
-                eligibility: 'ineligible',
-                reason: 'mandatory_rule_not_satisfied',
-                checks: {
-                  requiredInformation: 'passed',
-                  provenance: 'passed',
-                  processingPurpose: 'passed',
-                  policy: 'blocked',
-                  eligibilityRule: 'blocked',
-                },
-                updatedAt: 'Just now',
-                auditEvents: [...candidate.auditEvents, 'Mandatory rule violation found', 'Candidate marked ineligible'],
-              };
-            }
-
-            return {
-              ...candidate,
-              eligibility: needsAttention ? 'requires_attention' : 'eligible',
-              reason: needsAttention ? 'required_information_missing' : 'all_checks_passed',
-              checks: {
-                requiredInformation: needsAttention ? 'attention' : 'passed',
-                provenance: 'passed',
-                processingPurpose: 'passed',
-                policy: needsAttention ? 'attention' : 'passed',
-                eligibilityRule: needsAttention ? 'attention' : 'passed',
-              },
-              updatedAt: 'Just now',
-              auditEvents: [...candidate.auditEvents, needsAttention ? 'Exception raised' : 'Eligibility assessment completed'],
-            };
-          }
-
-          return candidate;
-        })
-      );
-    }, 900);
-
-    return () => window.clearInterval(timer);
-  }, [candidates]);
-
-  useEffect(() => {
-    if (!isMobileNavOpen) {
-      document.body.style.overflow = '';
-      return;
-    }
-
-    document.body.style.overflow = 'hidden';
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setIsMobileNavOpen(false);
-      }
+  const categoryCounts = useMemo(() => {
+    return {
+      recommended: candidates.filter((c) => c.matchCategory === 'recommended').length,
+      potential: candidates.filter((c) => c.matchCategory === 'potential').length,
+      attention: candidates.filter((c) => c.matchCategory === 'attention').length,
     };
-
-    window.addEventListener('keydown', onKeyDown);
-
-    return () => {
-      document.body.style.overflow = '';
-      window.removeEventListener('keydown', onKeyDown);
-    };
-  }, [isMobileNavOpen]);
-
-  useEffect(() => {
-    if (!activeCandidateId) {
-      return;
-    }
-
-    function onEsc(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        setActiveCandidateId(null);
-      }
-    }
-
-    window.addEventListener('keydown', onEsc);
-    return () => window.removeEventListener('keydown', onEsc);
-  }, [activeCandidateId]);
-
-  const activeRole = session?.role ?? 'operator';
-  const isReadOnly = Boolean(session?.role === 'leadership');
-  const hasResolvePermission = Boolean(session && canResolve(session.role) && !isReadOnly);
-  const hasContinuePermission = Boolean(session && canContinue(session.role) && !isReadOnly);
-
-  const dashboardNavItems = useMemo(() => {
-    const baseItems = [
-      { label: 'Dashboard', href: '/dashboard', active: false },
-      { label: 'Cases', href: '#', active: false },
-      { label: 'Review queues', href: '#', active: false },
-      { label: 'Notifications', href: '#', active: false },
-      { label: 'Audit', href: '#', active: false },
-    ];
-
-    if (activeRole === 'administrator' || activeRole === 'leadership') {
-      return [...baseItems, { label: 'Settings', href: '#', active: false }];
-    }
-
-    return baseItems;
-  }, [activeRole]);
-
-  const counts = useMemo(() => {
-    const eligible = candidates.filter((item) => item.eligibility === 'eligible').length;
-    const attention = candidates.filter((item) => item.eligibility === 'requires_attention').length;
-    const ineligible = candidates.filter((item) => item.eligibility === 'ineligible').length;
-    const blocked = candidates.filter((item) => item.eligibility === 'blocked').length;
-    const pending = candidates.filter((item) => item.eligibility === 'pending').length;
-    const processing = candidates.filter((item) => item.eligibility === 'processing').length;
-    return { eligible, attention, ineligible, blocked, pending, processing, total: candidates.length };
-  }, [candidates]);
-
-  const automationState: AutomationState = useMemo(() => {
-    if (counts.blocked > 0) {
-      return 'blocked';
-    }
-    if (counts.pending > 0 || counts.processing > 0) {
-      return 'assessing';
-    }
-    if (counts.attention > 0) {
-      return 'attention_required';
-    }
-    return 'completed';
-  }, [counts.attention, counts.blocked, counts.pending, counts.processing]);
-
-  const gateState: GateState = useMemo(() => {
-    if (!session) return 'permission_denied';
-    if (counts.total === 0) return 'pending';
-    if (counts.pending > 0 || counts.processing > 0) return 'processing';
-    if (counts.blocked > 0) return 'blocked';
-    if (counts.attention > 0 && counts.eligible > 0) return 'partial_success';
-    if (counts.attention > 0) return 'requires_attention';
-    if (counts.ineligible > 0 && counts.eligible === 0) return 'ineligible';
-    if (counts.eligible > 0) return 'completed';
-    return 'eligible';
-  }, [counts, session]);
-
-  const reasonOptions = useMemo(() => {
-    const unique = new Set<EligibilityReason>(candidates.map((item) => item.reason));
-    return Array.from(unique);
   }, [candidates]);
 
   const filteredCandidates = useMemo(() => {
-    return candidates.filter((candidate) => {
-      if (eligibilityFilter !== 'all' && candidate.eligibility !== eligibilityFilter) {
-        return false;
-      }
-
-      if (reasonFilter !== 'all' && candidate.reason !== reasonFilter) {
-        return false;
-      }
-
-      if (processingFilter === 'active' && !(candidate.eligibility === 'pending' || candidate.eligibility === 'processing')) {
-        return false;
-      }
-
-      if (processingFilter === 'completed' && (candidate.eligibility === 'pending' || candidate.eligibility === 'processing')) {
-        return false;
-      }
-
-      if (search.trim()) {
-        const query = search.trim().toLowerCase();
-        const searchName = isReadOnly ? '' : candidate.candidateName.toLowerCase();
-        if (!candidate.candidateIdentifier.toLowerCase().includes(query) && !searchName.includes(query)) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  }, [candidates, eligibilityFilter, isReadOnly, processingFilter, reasonFilter, search]);
-
-  const exceptionQueue = useMemo(
-    () => candidates.filter((candidate) => candidate.eligibility === 'requires_attention' || candidate.eligibility === 'blocked'),
-    [candidates]
-  );
-
-  const selectedCandidate = useMemo(
-    () => candidates.find((candidate) => candidate.id === activeCandidateId) ?? null,
-    [activeCandidateId, candidates]
-  );
-
-  const queueNotice = useMemo((): { tone: QueueNoticeTone; message: string } => {
-    if (automationState === 'assessing') {
-      return {
-        tone: 'neutral',
-        message: 'VEYQOR is automatically checking candidate records against approved rules, processing purpose, and policy constraints.',
-      };
+    let list = candidates.filter((c) => c.matchCategory === activeTab);
+    if (sortOption === 'strongest') {
+      list = [...list].sort((a, b) => b.matchScore - a.matchScore);
+    } else if (sortOption === 'experience') {
+      list = [...list].sort((a, b) => b.experience.localeCompare(a.experience));
     }
+    return list;
+  }, [candidates, activeTab, sortOption]);
 
-    if (automationState === 'blocked') {
-      return {
-        tone: 'error',
-        message: 'Blocking policy conditions were detected. Affected candidates cannot proceed until blocking conditions are resolved.',
-      };
-    }
-
-    if (automationState === 'attention_required') {
-      return {
-        tone: 'warning',
-        message: 'Some candidates require human attention before they can continue to AI sanitisation.',
-      };
-    }
-
-    return {
-      tone: 'success',
-      message: 'Eligibility assessment completed.',
-    };
-  }, [automationState]);
-
-  const canAdvanceToAI =
-    counts.eligible > 0
-    && counts.attention === 0
-    && counts.blocked === 0
-    && counts.pending === 0
-    && counts.processing === 0;
-
-  function resolveAttention(candidateId: string) {
-    setCandidates((current) =>
-      current.map((candidate) => {
-        if (candidate.id !== candidateId || (candidate.eligibility !== 'requires_attention' && candidate.eligibility !== 'blocked')) {
-          return candidate;
-        }
-
-        return {
-          ...candidate,
-          eligibility: 'eligible',
-          reason: 'all_checks_passed',
-          checks: {
-            requiredInformation: 'passed',
-            provenance: 'passed',
-            processingPurpose: 'passed',
-            policy: 'passed',
-            eligibilityRule: 'passed',
-          },
-          updatedAt: 'Just now',
-          auditEvents: [...candidate.auditEvents, 'Human intervention recorded', 'Exception resolved', 'Candidate marked eligible'],
-        };
-      })
+  function toggleShortlist(id: string) {
+    setCandidates((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, shortlisted: !c.shortlisted } : c))
     );
+    if (activeDrawerCandidate?.id === id) {
+      setActiveDrawerCandidate((prev) => (prev ? { ...prev, shortlisted: !prev.shortlisted } : null));
+    }
   }
 
-  function statusTone(status: EligibilityStatus) {
-    if (status === 'eligible') return styles.statusEligible;
-    if (status === 'requires_attention') return styles.statusAttention;
-    if (status === 'ineligible') return styles.statusIneligible;
-    if (status === 'blocked') return styles.statusBlocked;
-    return styles.statusPending;
+  function toggleSelectCandidate(id: string) {
+    setSelectedCandidateIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
   }
 
-  function checkTone(status: CheckStatus) {
-    if (status === 'passed') return styles.checkPassed;
-    if (status === 'attention') return styles.checkAttention;
-    if (status === 'blocked') return styles.checkBlocked;
-    if (status === 'processing') return styles.checkProcessing;
-    return styles.checkPending;
+  function handleBulkShortlist() {
+    setCandidates((prev) =>
+      prev.map((c) => (selectedCandidateIds.has(c.id) ? { ...c, shortlisted: true } : c))
+    );
+    setSelectedCandidateIds(new Set());
   }
 
   if (!session) {
     return (
-      <main className={styles.page}>
-        <div className={styles.skeletonShell}>
-          <span className={styles.skeletonBlock} />
-          <span className={styles.skeletonBlockWide} />
+      <main className={intakeStyles.page}>
+        <div className={intakeStyles.skeletonSurface}>
+          <span className={intakeStyles.skeletonLine} />
+          <span className={intakeStyles.skeletonBlock} />
         </div>
       </main>
     );
   }
 
   return (
-    <main className={styles.page}>
-      <div className={styles.appShell}>
-        <header className={styles.mobileHeader}>
-          <Image
-            src="/Untitled design - 2026-08-10T155155.182.png"
-            alt="Veyqor"
-            width={118}
-            height={30}
-            className={styles.mobileMark}
-            priority
-          />
+    <main className={intakeStyles.page}>
+      <div className={`${intakeStyles.appShell} ${sidebarCollapsed ? intakeStyles.appShellCollapsed : ''}`}>
+        {/* MOBILE HEADER & DRAWER */}
+        <header className={intakeStyles.mobileHeader}>
           <button
             type="button"
-            className={`${styles.mobileMenuButton} ${isMobileNavOpen ? styles.mobileMenuButtonOpen : ''}`}
-            aria-label={isMobileNavOpen ? 'Close navigation menu' : 'Open navigation menu'}
-            aria-expanded={isMobileNavOpen}
-            aria-controls="eligibility-mobile-drawer"
-            onClick={() => setIsMobileNavOpen((current) => !current)}
+            className={intakeStyles.mobileMenuButton}
+            onClick={() => setMobileNavOpen((current) => !current)}
+            aria-label="Open menu"
           >
-            <span className={styles.mobileMenuBars} aria-hidden="true" />
+            <span className={intakeStyles.mobileMenuBars} aria-hidden="true" />
           </button>
+          <Image src="/Untitled design - 2026-08-10T155155.182.png" alt="Veyqor" width={130} height={34} className={intakeStyles.mobileMark} priority />
         </header>
 
-        <div
-          className={`${styles.mobileBackdrop} ${isMobileNavOpen ? styles.mobileBackdropOpen : ''}`}
-          onClick={() => setIsMobileNavOpen(false)}
-          aria-hidden="true"
-        />
+        {/* SIDEBAR */}
+        <aside className={intakeStyles.sidebar}>
+          <div className={intakeStyles.sidebarTop}>
+            <div className={intakeStyles.brandRow}>
+              <span className={intakeStyles.brandShield} aria-hidden="true">◈</span>
+              {!sidebarCollapsed ? <Image src="/logo.png" alt="Veyqor" width={124} height={32} className={intakeStyles.sidebarMark} /> : null}
+            </div>
+            {!sidebarCollapsed ? (
+              <div className={intakeStyles.workspaceContext}>
+                <small>Workspace context</small>
+                <strong>{orgName}</strong>
+                <p>{tenantName}</p>
+              </div>
+            ) : null}
+          </div>
 
-        <aside
-          id="eligibility-mobile-drawer"
-          className={`${styles.mobileDrawer} ${isMobileNavOpen ? styles.mobileDrawerOpen : ''}`}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Mobile navigation"
-        >
-          <div className={styles.mobileDrawerTop}>
-            <Image
-              src="/logo.png"
-              alt="Veyqor"
-              width={126}
-              height={32}
-              className={styles.mobileDrawerMark}
-            />
+          <nav className={intakeStyles.sidebarNav} aria-label="Primary navigation">
+            {NAV_ITEMS.map((item) => (
+              <a
+                key={item.id}
+                href={item.href}
+                className={`${intakeStyles.navItem} ${item.id === 'cases' ? intakeStyles.navItemActive : ''}`}
+              >
+                <span className={intakeStyles.navIcon}><ShellIcon id={item.id} /></span>
+                {!sidebarCollapsed ? <span>{item.label}</span> : null}
+              </a>
+            ))}
+          </nav>
+
+          <div className={intakeStyles.sidebarFoot}>
             <button
               type="button"
-              className={styles.mobileDrawerClose}
-              onClick={() => setIsMobileNavOpen(false)}
-              aria-label="Close navigation menu"
+              className={intakeStyles.collapseButton}
+              onClick={() => setSidebarCollapsed((current) => !current)}
+              aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
-              ×
+              <span aria-hidden="true">{sidebarCollapsed ? '»' : '«'}</span>
             </button>
           </div>
+        </aside>
 
-          <div className={styles.workspaceContext}>
-            <span className={styles.contextKicker}>Workspace context</span>
-            <strong>{orgName}</strong>
-            <p>{tenantName} · Production workspace</p>
-          </div>
-
-          <button type="button" className={styles.mobileUserSummary}>
-            <span className={styles.avatar}>{session.fullName.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span>
-            <span>
-              <strong>{session.fullName}</strong>
-              <small>{roleLabel(session.role)}</small>
-            </span>
-          </button>
-
-          <nav className={styles.mobileNav} aria-label="Mobile primary navigation">
-            {dashboardNavItems.map((item) => (
-              <a
-                key={item.label}
-                className={`${styles.navItem} ${item.active ? styles.navItemActive : ''}`}
-                href={item.href}
-                onClick={() => setIsMobileNavOpen(false)}
+        {/* MAIN WORKSPACE WRAPPER */}
+        <div className={intakeStyles.mainWrap}>
+          {/* TOP APPLICATION HEADER */}
+          <header className={intakeStyles.topHeader}>
+            <div className={intakeStyles.topHeaderLeft}>
+              <button
+                type="button"
+                className={intakeStyles.collapseButtonInline}
+                onClick={() => setSidebarCollapsed((current) => !current)}
+                aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               >
-                {item.label}
-              </a>
-            ))}
-          </nav>
-        </aside>
-
-        <aside className={styles.sidebar}>
-          <div className={styles.brandArea}>
-            <Image
-              src="/logo.png"
-              alt="Veyqor"
-              width={142}
-              height={38}
-              className={styles.brandMark}
-              priority
-            />
-            <div className={styles.workspaceContext}>
-              <span className={styles.contextKicker}>Workspace context</span>
-              <strong>{orgName}</strong>
-              <p>{tenantName} · Production workspace</p>
+                {sidebarCollapsed ? '»' : '«'}
+              </button>
+              <Image src="/Untitled design - 2026-08-10T155155.182.png" alt="Veyqor" width={134} height={34} className={intakeStyles.mark} priority />
             </div>
-          </div>
 
-          <nav className={styles.sidebarNav} aria-label="Primary navigation">
-            {dashboardNavItems.map((item) => (
-              <a key={item.label} className={`${styles.navItem} ${item.active ? styles.navItemActive : ''}`} href={item.href}>
-                {item.label}
-              </a>
-            ))}
-          </nav>
-        </aside>
-
-        <div className={styles.mainWrap}>
-          <header className={styles.topHeader}>
-            <div>
-              <p className={styles.breadcrumb}>Cases / {caseContext.jobTitle} / Candidate Ingestion / Eligibility Review</p>
-              <h1>Eligibility Review</h1>
-              <p className={styles.topSubtitle}>VEYQOR automatically validates candidate eligibility before they enter the AI evaluation workflow.</p>
-            </div>
-            <div className={styles.topActions}>
-              <button type="button" className={styles.iconButton} aria-label="Notifications">◦</button>
-              <div className={styles.headerContext}>
+            <div className={intakeStyles.topHeaderRight}>
+              <button type="button" className={intakeStyles.iconButton} aria-label="Notifications">◦</button>
+              <div className={intakeStyles.topMeta}>
+                <span className={intakeStyles.contextLabel}>Workspace</span>
                 <strong>{orgName}</strong>
-                <span>{tenantName}</span>
+                <small>{tenantName}</small>
               </div>
-              <button type="button" className={styles.userButton} onClick={() => router.push('/dashboard')}>
-                <span className={styles.avatar}>{session.fullName.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span>
-                <span>
+              <button type="button" className={intakeStyles.userButton} aria-label="User menu">
+                <span className={intakeStyles.avatar}>{session.fullName.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span>
+                <span className={intakeStyles.userMeta}>
                   <strong>{session.fullName}</strong>
                   <small>{roleLabel(session.role)}</small>
                 </span>
+                <span className={intakeStyles.userCaret} aria-hidden="true">⌄</span>
               </button>
             </div>
           </header>
 
-          <section className={styles.contextPanel}>
-            <div>
-              <p className={styles.panelKicker}>Case context</p>
-              <h2>{caseContext.jobTitle}</h2>
-              <p className={styles.caseMeta}>{caseContext.caseId} · Criteria {caseContext.criteriaVersion} · {orgName}</p>
-            </div>
-            <div className={styles.contextPills}>
-              <span>Case ID <strong>{caseContext.caseId}</strong></span>
-              <span>Criteria version <strong>{caseContext.criteriaVersion}</strong></span>
-              <span>Organisation <strong>{orgName}</strong></span>
-            </div>
-          </section>
-
-          <section className={styles.stepperPanel}>
-            <div className={styles.stepper} aria-label="Candidate ingestion workflow progress">
+          <div className={styles.contentContainer}>
+            {/* WORKFLOW PROGRESS STEPPER */}
+            <div className={intakeStyles.stepper} aria-label="Workflow progress">
               {WORKFLOW_STEPS.map((step, index) => {
-                const complete = index < 4;
-                const active = index === 4;
+                const isComplete = index < 5;
+                const isActive = index === 5;
                 return (
-                  <div key={step} className={`${styles.step} ${complete ? styles.stepComplete : ''} ${active ? styles.stepActive : ''}`}>
-                    <span>{complete ? '✓' : active ? '●' : '○'}</span>
+                  <div
+                    key={step}
+                    className={`${intakeStyles.step} ${isComplete ? intakeStyles.stepComplete : ''} ${isActive ? intakeStyles.stepActive : ''}`}
+                  >
+                    <span>{isComplete ? '✓' : index + 1}</span>
                     <p>{step}</p>
                   </div>
                 );
               })}
             </div>
-          </section>
 
-          {isReadOnly ? (
-            <section className={styles.readOnlyBanner} role="status">
-              <strong>View only access</strong>
-              <p>You can inspect eligibility outcomes and evidence, but cannot resolve exceptions or continue restricted workflow actions.</p>
-            </section>
-          ) : null}
-
-          <section className={styles.summaryStrip} aria-label="Eligibility summary metrics">
-            <article className={styles.summaryCard}><span>Eligible</span><strong>{counts.eligible}</strong></article>
-            <article className={styles.summaryCard}><span>Requires attention</span><strong>{counts.attention}</strong></article>
-            <article className={styles.summaryCard}><span>Ineligible</span><strong>{counts.ineligible}</strong></article>
-            <article className={styles.summaryCard}><span>Pending</span><strong>{counts.pending + counts.processing}</strong></article>
-          </section>
-
-          <section className={styles.workspaceGrid}>
-            <div className={styles.mainColumn}>
-              <section className={`${styles.systemPanel} ${queueNotice.tone === 'success' ? styles.systemSuccess : queueNotice.tone === 'warning' ? styles.systemWarning : queueNotice.tone === 'error' ? styles.systemError : ''}`} role="status" aria-live="polite">
-                <div className={styles.systemPanelHead}>
-                  <h3>Automated eligibility assessment</h3>
-                  <span className={styles.systemSignal} aria-hidden="true" />
-                </div>
-                <p>{queueNotice.message}</p>
-                <small>
-                  {automationState === 'assessing'
-                    ? 'Processing'
-                    : automationState === 'attention_required'
-                      ? 'Attention required'
-                      : automationState === 'blocked'
-                        ? 'Blocked'
-                        : 'Completed'}
-                </small>
-              </section>
-
-              {exceptionQueue.length > 0 ? (
-                <section className={styles.panel}>
-                  <header className={styles.panelHeader}>
-                    <div>
-                      <h3>Attention required</h3>
-                      <p>{exceptionQueue.length} candidate{exceptionQueue.length === 1 ? '' : 's'} require review before they can continue safely.</p>
-                    </div>
-                    {hasResolvePermission ? (
-                      <button type="button" className={styles.primaryAction} onClick={() => setActiveCandidateId(exceptionQueue[0].id)}>
-                        Review exceptions
-                      </button>
-                    ) : null}
-                  </header>
-                  <div className={styles.exceptionQueue}>
-                    {exceptionQueue.slice(0, 4).map((candidate) => (
-                      <article key={candidate.id} className={styles.exceptionItem}>
-                        <strong>{candidate.candidateIdentifier}</strong>
-                        <p>{reasonLabel(candidate.reason)}</p>
-                        <button type="button" className={styles.linkAction} onClick={() => setActiveCandidateId(candidate.id)}>
-                          {candidate.eligibility === 'blocked' ? 'Review block' : 'Review exception'}
-                        </button>
-                      </article>
-                    ))}
-                  </div>
-                </section>
-              ) : null}
-
-              <section className={styles.panel}>
-                <header className={styles.panelHeader}>
-                  <div>
-                    <h3>Candidate eligibility workspace</h3>
-                    <p>{counts.total} candidate{counts.total === 1 ? '' : 's'} assessed against approved eligibility rules and policy context.</p>
-                  </div>
-                </header>
-
-                <div className={styles.filtersRow}>
-                  <label>
-                    <span>Eligibility</span>
-                    <select value={eligibilityFilter} onChange={(event) => setEligibilityFilter(event.target.value as EligibilityFilter)}>
-                      <option value="all">All</option>
-                      <option value="eligible">Eligible</option>
-                      <option value="requires_attention">Requires attention</option>
-                      <option value="ineligible">Ineligible</option>
-                      <option value="blocked">Blocked</option>
-                      <option value="pending">Pending</option>
-                      <option value="processing">Processing</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Reason</span>
-                    <select value={reasonFilter} onChange={(event) => setReasonFilter(event.target.value as EligibilityReason | 'all')}>
-                      <option value="all">All</option>
-                      {reasonOptions.map((reason) => (
-                        <option key={reason} value={reason}>{reasonLabel(reason)}</option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Processing</span>
-                    <select value={processingFilter} onChange={(event) => setProcessingFilter(event.target.value as ProcessingFilter)}>
-                      <option value="all">All</option>
-                      <option value="active">Pending / Processing</option>
-                      <option value="completed">Completed</option>
-                    </select>
-                  </label>
-
-                  <label className={styles.searchLabel}>
-                    <span>Search</span>
-                    <input
-                      type="search"
-                      value={search}
-                      onChange={(event) => setSearch(event.target.value)}
-                      placeholder="Search candidate identifier"
-                    />
-                  </label>
-                </div>
-
-                {filteredCandidates.length === 0 ? (
-                  <div className={styles.emptyState}>
-                    <strong>No candidates match the selected filters</strong>
-                    <p>Adjust eligibility, reason, processing state, or search filters.</p>
-                  </div>
-                ) : (
-                  <>
-                    <div className={styles.tableWrap}>
-                      <table className={styles.table}>
-                        <thead>
-                          <tr>
-                            <th>Candidate</th>
-                            <th>Eligibility</th>
-                            <th>Reason</th>
-                            <th>Checks</th>
-                            <th>Updated</th>
-                            <th>Action</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {filteredCandidates.map((candidate) => (
-                            <tr key={candidate.id}>
-                              <td>
-                                <strong>{candidate.candidateIdentifier}</strong>
-                                <p>{isReadOnly ? 'Restricted information' : candidate.candidateName}</p>
-                              </td>
-                              <td><span className={`${styles.statusBadge} ${statusTone(candidate.eligibility)}`}>{displayStatus(candidate.eligibility)}</span></td>
-                              <td>{reasonLabel(candidate.reason)}</td>
-                              <td>
-                                <span className={styles.checkSummary}>
-                                  {candidate.eligibility === 'eligible'
-                                    ? 'Passed'
-                                    : candidate.eligibility === 'requires_attention'
-                                      ? 'Attention'
-                                      : candidate.eligibility === 'ineligible' || candidate.eligibility === 'blocked'
-                                        ? 'Blocked'
-                                        : 'Processing'}
-                                </span>
-                              </td>
-                              <td>{candidate.updatedAt}</td>
-                              <td>
-                                <button type="button" className={styles.linkAction} onClick={() => setActiveCandidateId(candidate.id)}>
-                                  {candidate.eligibility === 'requires_attention' || candidate.eligibility === 'blocked' ? 'Review' : 'View details'}
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    <div className={styles.mobileList}>
-                      {filteredCandidates.map((candidate) => (
-                        <article key={candidate.id} className={styles.mobileCard}>
-                          <strong>{candidate.candidateIdentifier}</strong>
-                          <span className={`${styles.statusBadge} ${statusTone(candidate.eligibility)}`}>{displayStatus(candidate.eligibility)}</span>
-                          <p>{reasonLabel(candidate.reason)}</p>
-                          <small>Criteria {candidate.criteriaVersion} · Updated {candidate.updatedAt}</small>
-                          <button type="button" className={styles.linkAction} onClick={() => setActiveCandidateId(candidate.id)}>
-                            {candidate.eligibility === 'requires_attention' || candidate.eligibility === 'blocked' ? 'Review exception' : 'View details'}
-                          </button>
-                        </article>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </section>
-            </div>
-
-            <aside className={styles.sideColumn}>
-              <section className={styles.sideCard}>
-                <h3>Eligibility check pipeline</h3>
-                <ol className={styles.pipeline}>
-                  <li><span>✓</span><p>Candidate received</p></li>
-                  <li><span>✓</span><p>Required information</p></li>
-                  <li><span>✓</span><p>Provenance verified</p></li>
-                  <li><span>✓</span><p>Processing purpose</p></li>
-                  <li><span>{counts.pending + counts.processing > 0 ? '●' : '✓'}</span><p>Eligibility rules</p></li>
-                  <li><span>{counts.attention > 0 || counts.blocked > 0 ? '!' : '✓'}</span><p>Policy checks</p></li>
-                  <li><span>{counts.pending + counts.processing > 0 ? '○' : '✓'}</span><p>Eligibility decision</p></li>
-                </ol>
-              </section>
-
-              <section className={styles.sideCard}>
-                <h3>Evaluation context</h3>
-                <div className={styles.policyMeta}>
-                  <p><span>Case</span><strong>{caseContext.jobTitle}</strong></p>
-                  <p><span>Criteria</span><strong>Criteria {caseContext.criteriaVersion}</strong></p>
-                  <p><span>Eligibility policy</span><strong>Current organisation policy</strong></p>
-                  <p><span>Evaluated against</span><strong>Criteria {caseContext.criteriaVersion}</strong></p>
-                </div>
-              </section>
-
-              <section className={styles.sideCard}>
-                {gateState === 'completed' || gateState === 'eligible' ? (
-                  <>
-                    <h3>Eligibility assessment complete</h3>
-                    <p>VEYQOR has completed the eligibility assessment for this case.</p>
-                    <div className={styles.compactStats}>
-                      <span>Eligible <strong>{counts.eligible}</strong></span>
-                      <span>Requires attention <strong>{counts.attention}</strong></span>
-                      <span>Ineligible <strong>{counts.ineligible + counts.blocked}</strong></span>
-                    </div>
-                    {hasContinuePermission && canAdvanceToAI ? (
-                      <button type="button" className={styles.primaryAction} onClick={() => router.push(NEXT_STAGE_ROUTE)}>
-                        Continue to AI evaluation
-                      </button>
-                    ) : (
-                      <p className={styles.viewOnlyNotice}>
-                        {isReadOnly ? 'View only access: progression actions are disabled.' : 'Continue is available only when workflow rules allow progression.'}
-                      </p>
-                    )}
-                  </>
-                ) : gateState === 'partial_success' ? (
-                  <>
-                    <h3>Partial success</h3>
-                    <p>Some candidates are eligible, while others require attention or are ineligible.</p>
-                    {hasResolvePermission && exceptionQueue.length > 0 ? (
-                      <button type="button" className={styles.primaryAction} onClick={() => setActiveCandidateId(exceptionQueue[0].id)}>
-                        Review exceptions
-                      </button>
-                    ) : null}
-                  </>
-                ) : gateState === 'blocked' || gateState === 'requires_attention' ? (
-                  <>
-                    <h3>Eligibility review requires attention</h3>
-                    <p>Some candidates require resolution before the case can continue.</p>
-                    {hasResolvePermission && exceptionQueue.length > 0 ? (
-                      <button type="button" className={styles.primaryAction} onClick={() => setActiveCandidateId(exceptionQueue[0].id)}>
-                        Review exceptions
-                      </button>
-                    ) : null}
-                  </>
-                ) : gateState === 'processing' ? (
-                  <>
-                    <h3>Assessment in progress</h3>
-                    <p>VEYQOR is completing automated eligibility checks for this case.</p>
-                  </>
-                ) : gateState === 'permission_denied' ? (
-                  <>
-                    <h3>Permission required</h3>
-                    <p>Your current role can view this page but cannot perform eligibility actions.</p>
-                  </>
-                ) : (
-                  <>
-                    <h3>Awaiting candidate data</h3>
-                    <p>No candidate records are ready for eligibility assessment yet.</p>
-                  </>
-                )}
-              </section>
-            </aside>
-          </section>
-        </div>
-      </div>
-
-      {selectedCandidate ? (
-        <>
-          <div className={styles.drawerOverlay} role="presentation" onClick={() => setActiveCandidateId(null)} />
-          <aside className={styles.drawer} role="dialog" aria-modal="true" aria-label="Eligibility details">
-            <header className={styles.drawerHeader}>
-              <div>
-                <h3>Eligibility details</h3>
-                <p>{selectedCandidate.candidateIdentifier}</p>
+            {/* PAGE HEADER */}
+            <header className={styles.pageHeader}>
+              <span className={styles.breadcrumb}>Job Intake / Candidate Review</span>
+              <h1 className={styles.mainTitle}>Review your candidates</h1>
+              <p className={styles.mainSubtitle}>
+                VEYQOR has evaluated the processed candidates against the approved criteria and ranked the strongest matches for your review.
+              </p>
+              <div className={styles.jobContextRow}>
+                <span className={styles.jobTitleBadge}>Senior Product Designer</span>
+                <span className={styles.contextDot}>•</span>
+                <span>Product Design</span>
+                <span className={styles.contextDot}>•</span>
+                <span>Senior level</span>
+                <span className={styles.contextDot}>•</span>
+                <span>Full-time</span>
+                <span className={styles.contextDot}>•</span>
+                <span>Lagos or Remote</span>
               </div>
-              <button type="button" className={styles.closeBtn} onClick={() => setActiveCandidateId(null)} aria-label="Close eligibility details">×</button>
             </header>
 
-            <section className={styles.drawerSection}>
-              <h4>Candidate</h4>
-              <p>{selectedCandidate.candidateIdentifier}</p>
-              <small>{isReadOnly ? 'Restricted information' : selectedCandidate.candidateName}</small>
-            </section>
-
-            <section className={styles.drawerSection}>
-              <h4>Eligibility</h4>
-              <span className={`${styles.statusBadge} ${statusTone(selectedCandidate.eligibility)}`}>{displayStatus(selectedCandidate.eligibility)}</span>
-              <p>{reasonLabel(selectedCandidate.reason)}</p>
-            </section>
-
-            <section className={styles.drawerSection}>
-              <h4>Eligibility checks</h4>
-              <div className={styles.checkList}>
-                <p><span>Required information</span><strong className={checkTone(selectedCandidate.checks.requiredInformation)}>{checkLabel(selectedCandidate.checks.requiredInformation)}</strong></p>
-                <p><span>Provenance</span><strong className={checkTone(selectedCandidate.checks.provenance)}>{checkLabel(selectedCandidate.checks.provenance)}</strong></p>
-                <p><span>Processing purpose</span><strong className={checkTone(selectedCandidate.checks.processingPurpose)}>{checkLabel(selectedCandidate.checks.processingPurpose)}</strong></p>
-                <p><span>Policy</span><strong className={checkTone(selectedCandidate.checks.policy)}>{checkLabel(selectedCandidate.checks.policy)}</strong></p>
-                <p><span>Eligibility rule</span><strong className={checkTone(selectedCandidate.checks.eligibilityRule)}>{checkLabel(selectedCandidate.checks.eligibilityRule)}</strong></p>
-              </div>
-            </section>
-
-            {(selectedCandidate.eligibility === 'requires_attention' || selectedCandidate.eligibility === 'blocked') ? (
-              <section className={styles.drawerSection}>
-                <h4>Exception details</h4>
-                <div className={styles.evidenceList}>
-                  <p><span>Issue</span><strong>{selectedCandidate.eligibility === 'blocked' ? 'Blocking condition detected' : 'Automatic determination incomplete'}</strong></p>
-                  <p><span>Impact</span><strong>{selectedCandidate.eligibility === 'blocked' ? 'Candidate cannot continue' : 'Candidate requires authorised review'}</strong></p>
-                  <p><span>Required action</span><strong>{hasResolvePermission ? 'Review and resolve exception' : 'Await authorised reviewer action'}</strong></p>
-                  <p><span>Evidence</span><strong>Policy and ingestion checks attached</strong></p>
+            {/* HIGH-LEVEL PROCESSING SUMMARY BANNER */}
+            <section className={styles.summaryBanner} aria-label="Processing Summary">
+              <div className={styles.summaryBannerLeft}>
+                <div className={styles.summaryIcon}>✓</div>
+                <div>
+                  <h2 className={styles.summaryTitle}>Ready for review</h2>
+                  <p className={styles.summaryDesc}>
+                    Candidate processing is complete. VEYQOR identified the strongest matches against the approved hiring criteria.
+                  </p>
                 </div>
-              </section>
-            ) : null}
-
-            <section className={styles.drawerSection}>
-              <h4>Policy context</h4>
-              <div className={styles.evidenceList}>
-                <p><span>Case</span><strong>{caseContext.jobTitle}</strong></p>
-                <p><span>Criteria</span><strong>Criteria {caseContext.criteriaVersion}</strong></p>
-                <p><span>Organisation</span><strong>{orgName}</strong></p>
+              </div>
+              <div className={styles.summaryBannerRight}>
+                <div className={styles.summaryStatItem}>
+                  <strong>142</strong>
+                  <span>Processed</span>
+                </div>
+                <div className={styles.summaryStatItem}>
+                  <strong style={{ color: '#059669' }}>18</strong>
+                  <span>Strong matches</span>
+                </div>
+                <div className={styles.summaryStatItem}>
+                  <strong style={{ color: '#b45309' }}>7</strong>
+                  <span>Potential</span>
+                </div>
+                <div className={styles.summaryStatItem}>
+                  <strong style={{ color: '#b42318' }}>3</strong>
+                  <span>Need attention</span>
+                </div>
               </div>
             </section>
 
-            <section className={styles.drawerSection}>
-              <h4>Eligibility-related history</h4>
-              <ol className={styles.auditList}>
-                {selectedCandidate.auditEvents.map((event, index) => (
-                  <li key={`${selectedCandidate.id}-${event}-${index}`}>{event}</li>
-                ))}
-              </ol>
-            </section>
+            {/* MAIN WORKSPACE LAYOUT GRID */}
+            <div className={styles.layoutGrid}>
+              {/* LEFT CANDIDATE WORKSPACE */}
+              <div className={styles.leftWorkspace}>
+                {/* CANDIDATE TABS & CONTROLS */}
+                <div className={styles.controlsRow}>
+                  <div className={styles.tabsGroup} role="tablist" aria-label="Candidate category tabs">
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={activeTab === 'recommended'}
+                      className={`${styles.tabButton} ${activeTab === 'recommended' ? styles.tabButtonActive : ''}`}
+                      onClick={() => setActiveTab('recommended')}
+                    >
+                      <span>Recommended</span>
+                      <span className={`${styles.tabBadge} ${activeTab === 'recommended' ? styles.tabBadgeActive : ''}`}>
+                        {categoryCounts.recommended}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={activeTab === 'potential'}
+                      className={`${styles.tabButton} ${activeTab === 'potential' ? styles.tabButtonActive : ''}`}
+                      onClick={() => setActiveTab('potential')}
+                    >
+                      <span>Potential</span>
+                      <span className={`${styles.tabBadge} ${activeTab === 'potential' ? styles.tabBadgeActive : ''}`}>
+                        {categoryCounts.potential}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={activeTab === 'attention'}
+                      className={`${styles.tabButton} ${activeTab === 'attention' ? styles.tabButtonActive : ''}`}
+                      onClick={() => setActiveTab('attention')}
+                    >
+                      <span>Needs attention</span>
+                      <span className={`${styles.tabBadge} ${activeTab === 'attention' ? styles.tabBadgeActive : ''}`}>
+                        {categoryCounts.attention}
+                      </span>
+                    </button>
+                  </div>
 
-            {hasResolvePermission && (selectedCandidate.eligibility === 'requires_attention' || selectedCandidate.eligibility === 'blocked') ? (
-              <button type="button" className={styles.primaryAction} onClick={() => resolveAttention(selectedCandidate.id)}>
-                Resolve and mark eligible
-              </button>
-            ) : null}
-          </aside>
-        </>
-      ) : null}
+                  <div className={styles.filterControls}>
+                    <select
+                      className={styles.selectDropdown}
+                      value={sortOption}
+                      onChange={(e) => setSortOption(e.target.value as any)}
+                      aria-label="Sort candidates"
+                    >
+                      <option value="strongest">Sort: Strongest match</option>
+                      <option value="experience">Sort: Most experience</option>
+                      <option value="recent">Sort: Recently processed</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* CANDIDATE LIST SURFACE */}
+                <div className={styles.candidateSurface}>
+                  <div className={styles.candidateList}>
+                    {filteredCandidates.map((candidate) => {
+                      const isSelected = selectedCandidateIds.has(candidate.id);
+                      return (
+                        <div
+                          key={candidate.id}
+                          className={`${styles.candidateRow} ${isSelected ? styles.candidateRowSelected : ''}`}
+                        >
+                          <div className={styles.candidateLeft}>
+                            <input
+                              type="checkbox"
+                              className={styles.candidateCheckbox}
+                              checked={isSelected}
+                              onChange={() => toggleSelectCandidate(candidate.id)}
+                              aria-label={`Select ${candidate.code}`}
+                            />
+                            <div className={styles.candidateAvatar}>{candidate.initials}</div>
+                            <div className={styles.candidateNameInfo}>
+                              <h4>{candidate.code}</h4>
+                              <p>{candidate.role} • {candidate.experience}</p>
+                            </div>
+                          </div>
+
+                          <div className={styles.skillsTags}>
+                            {candidate.skills.slice(0, 3).map((skill) => (
+                              <span key={skill} className={styles.skillTag}>{skill}</span>
+                            ))}
+                            {candidate.skills.length > 3 ? (
+                              <span className={styles.moreSkillsTag}>+{candidate.skills.length - 3} more</span>
+                            ) : null}
+                          </div>
+
+                          <div className={styles.matchScoreBox}>
+                            <div
+                              className={`${styles.scoreCircle} ${
+                                candidate.matchCategory === 'potential'
+                                  ? styles.scoreCirclePotential
+                                  : candidate.matchCategory === 'attention'
+                                  ? styles.scoreCircleAttention
+                                  : ''
+                              }`}
+                            >
+                              {candidate.matchScore}%
+                            </div>
+                            <span
+                              className={`${styles.matchLabel} ${
+                                candidate.matchCategory === 'potential'
+                                  ? styles.labelPotential
+                                  : candidate.matchCategory === 'attention'
+                                  ? styles.labelAttention
+                                  : styles.labelEligible
+                              }`}
+                            >
+                              {candidate.matchCategory === 'recommended'
+                                ? 'Strong match'
+                                : candidate.matchCategory === 'potential'
+                                ? 'Potential'
+                                : 'Attention'}
+                            </span>
+                          </div>
+
+                          <div className={styles.criteriaSummaryCell}>
+                            <strong>{candidate.requiredCriteriaResult}</strong>
+                            <small>{candidate.confidence}</small>
+                          </div>
+
+                          <div className={styles.rowActions}>
+                            <button
+                              type="button"
+                              className={styles.viewButton}
+                              onClick={() => setActiveDrawerCandidate(candidate)}
+                            >
+                              View candidate →
+                            </button>
+                            <button
+                              type="button"
+                              className={`${styles.shortlistButton} ${candidate.shortlisted ? styles.shortlistButtonActive : ''}`}
+                              onClick={() => toggleShortlist(candidate.id)}
+                            >
+                              {candidate.shortlisted ? 'Shortlisted ✓' : 'Shortlist'}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {filteredCandidates.length === 0 ? (
+                      <div style={{ padding: '32px', textAlign: 'center', color: '#64748b' }}>
+                        <p style={{ fontWeight: 600, fontSize: '14px' }}>No candidates in this view</p>
+                        <p style={{ fontSize: '12px', marginTop: '4px' }}>Select another tab above or ingest more candidates.</p>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+
+              {/* RIGHT SUPPORTING SUMMARY COLUMN */}
+              <aside className={styles.rightSummaryColumn}>
+                {/* REVIEW PROGRESS CARD */}
+                <div className={styles.sideCard}>
+                  <h3 className={styles.sideCardTitle}>Review progress</h3>
+                  <div className={styles.progressStatsRow}>
+                    <span>28 total evaluated</span>
+                    <strong style={{ color: '#059669' }}>18 Recommended</strong>
+                  </div>
+                </div>
+
+                {/* ATTENTION ITEMS CARD */}
+                <div className={styles.sideCard}>
+                  <h3 className={styles.sideCardTitle}>Attention items</h3>
+                  <div className={styles.attentionItemsList}>
+                    <div className={styles.attentionItemBox}>
+                      <span className={styles.attentionText}>1 candidate qualification unverified</span>
+                      <button type="button" className={styles.attentionBtn} onClick={() => setActiveTab('attention')}>
+                        Review →
+                      </button>
+                    </div>
+                    <div className={styles.attentionItemBox}>
+                      <span className={styles.attentionText}>1 experience timeline overlap</span>
+                      <button type="button" className={styles.attentionBtn} onClick={() => setActiveTab('attention')}>
+                        Review →
+                      </button>
+                    </div>
+                    <div className={styles.attentionItemBox}>
+                      <span className={styles.attentionText}>1 document quality scan issue</span>
+                      <button type="button" className={styles.attentionBtn} onClick={() => setActiveTab('attention')}>
+                        Review →
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* NEXT STEPS CARD */}
+                <div className={styles.nextStepBox}>
+                  <h3 className={styles.sideCardTitle}>What would you like to do next?</h3>
+                  <button
+                    type="button"
+                    className={styles.goldPrimaryBtn}
+                    onClick={() => router.push('/shortlist-review')}
+                  >
+                    <span>Review shortlisted candidates</span>
+                    <span>→</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.outlineSecondaryBtn}
+                    onClick={() => router.push('/candidate-ingestion')}
+                  >
+                    Ingest more candidates
+                  </button>
+                </div>
+              </aside>
+            </div>
+          </div>
+        </div>
+
+        {/* CANDIDATE DETAIL DRAWER */}
+        {activeDrawerCandidate ? (
+          <>
+            <div
+              className={styles.drawerBackdrop}
+              onClick={() => setActiveDrawerCandidate(null)}
+              aria-hidden="true"
+            />
+            <div className={styles.drawer} role="dialog" aria-modal="true" aria-label="Candidate details">
+              <div className={styles.drawerHeader}>
+                <div className={styles.drawerTitleArea}>
+                  <h3>{activeDrawerCandidate.code}</h3>
+                  <p>{activeDrawerCandidate.role} • {activeDrawerCandidate.experience}</p>
+                </div>
+                <button
+                  type="button"
+                  className={styles.drawerCloseBtn}
+                  onClick={() => setActiveDrawerCandidate(null)}
+                  aria-label="Close details"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className={styles.drawerTabs}>
+                {(['overview', 'profile', 'evidence', 'files'] as const).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    className={`${styles.drawerTabBtn} ${drawerTab === t ? styles.drawerTabBtnActive : ''}`}
+                    onClick={() => setDrawerTab(t)}
+                  >
+                    {t.charAt(0).toUpperCase() + t.slice(1)}
+                  </button>
+                ))}
+              </div>
+
+              <div className={styles.drawerBody}>
+                {drawerTab === 'overview' ? (
+                  <>
+                    <div className={styles.whySection}>
+                      <h4>Why VEYQOR recommended this candidate</h4>
+                      <p>{activeDrawerCandidate.whyRecommended}</p>
+                    </div>
+
+                    <div>
+                      <h4 style={{ fontSize: '13.5px', fontWeight: 700, marginBottom: '12px' }}>Criteria match results</h4>
+                      <div className={styles.criteriaChecklist}>
+                        {activeDrawerCandidate.criteriaChecklist.map((item) => (
+                          <div key={item.id} className={styles.checklistRow}>
+                            <div className={styles.checkTitleRow}>
+                              <span style={{ color: item.status === 'passed' ? '#10b981' : '#f59e0b' }}>
+                                {item.status === 'passed' ? '✓' : '●'}
+                              </span>
+                              <span>{item.title}</span>
+                            </div>
+                            <p className={styles.checkDesc}>{item.desc}</p>
+
+                            {item.evidence ? (
+                              <div>
+                                <button
+                                  type="button"
+                                  className={styles.evidenceToggle}
+                                  onClick={() =>
+                                    setExpandedEvidenceId((prev) => (prev === item.id ? null : item.id))
+                                  }
+                                >
+                                  {expandedEvidenceId === item.id ? 'Hide evidence ↑' : 'View evidence ↓'}
+                                </button>
+                                {expandedEvidenceId === item.id ? (
+                                  <div
+                                    style={{
+                                      background: '#f8fafc',
+                                      border: '1px solid rgba(60,66,78,0.1)',
+                                      borderRadius: '8px',
+                                      padding: '10px 12px',
+                                      marginTop: '6px',
+                                      marginLeft: '24px',
+                                      fontSize: '12px',
+                                      color: '#475569',
+                                    }}
+                                  >
+                                    <strong>Source evidence:</strong> {item.evidence}
+                                  </div>
+                                ) : null}
+                              </div>
+                            ) : null}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ padding: '20px', color: '#64748b', fontSize: '13px' }}>
+                    <p>Detailed {drawerTab} records available in candidate vault.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        ) : null}
+
+        {/* CONTEXTUAL BULK ACTION BAR */}
+        {selectedCandidateIds.size > 0 ? (
+          <div className={styles.bulkActionBar}>
+            <span className={styles.bulkCount}>{selectedCandidateIds.size} candidates selected</span>
+            <button type="button" className={`${styles.bulkBtn} ${styles.bulkBtnGold}`} onClick={handleBulkShortlist}>
+              Shortlist selected
+            </button>
+            <button type="button" className={styles.bulkBtn} onClick={() => setSelectedCandidateIds(new Set())}>
+              Deselect
+            </button>
+          </div>
+        ) : null}
+      </div>
     </main>
   );
 }
