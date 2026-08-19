@@ -1,0 +1,515 @@
+/* CANDIDATE ENGAGEMENT SETUP MODULE STYLES */
+
+.page {
+  min-height: 100dvh;
+}
+
+.contentContainer {
+  padding: 0 0 80px;
+  display: grid;
+  gap: 24px;
+  max-width: 1160px;
+  margin: 0 auto;
+}
+
+/* HEADER SECTION */
+.pageHeader {
+  display: grid;
+  gap: 8px;
+}
+
+.eyebrow {
+  font-family: var(--font-ibm-mono), monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: #7c3aed;
+  text-transform: uppercase;
+}
+
+.mainTitle {
+  font-size: 32px;
+  font-weight: 700;
+  color: #10131d;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.mainSubtitle {
+  color: #525a6b;
+  font-size: 14px;
+  line-height: 1.5;
+  max-width: 720px;
+}
+
+.jobContextRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.jobTitleBadge {
+  font-weight: 700;
+  color: #10131d;
+}
+
+.contextDot {
+  color: #cbd5e1;
+}
+
+/* MAIN TWO-COLUMN LAYOUT */
+.layoutGrid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 24px;
+  align-items: start;
+}
+
+.leftColumn {
+  display: grid;
+  gap: 20px;
+}
+
+.rightColumn {
+  display: grid;
+  gap: 20px;
+  position: sticky;
+  top: 20px;
+}
+
+/* PRIMARY LEFT SECTION: READY TO ENGAGE */
+.readySurface {
+  background: #ffffff;
+  border: 1px solid rgba(60, 66, 78, 0.12);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(16, 19, 29, 0.03);
+  display: grid;
+  gap: 20px;
+}
+
+.surfaceHeader h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #10131d;
+}
+
+.surfaceHeader p {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.numberedFlow {
+  display: grid;
+  gap: 16px;
+  padding-top: 8px;
+}
+
+.flowStep {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(60, 66, 78, 0.07);
+}
+
+.flowStep:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.flowNumber {
+  font-family: var(--font-ibm-mono), monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: #7c3aed;
+  background: rgba(124, 58, 237, 0.08);
+  border: 1px solid rgba(124, 58, 237, 0.2);
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.flowContent h4 {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #10131d;
+}
+
+.flowContent p {
+  font-size: 13px;
+  color: #525a6b;
+  margin-top: 3px;
+  line-height: 1.45;
+}
+
+/* ACCORDIONS SECTION */
+.accordionsGroup {
+  display: grid;
+  gap: 12px;
+}
+
+.accordionItem {
+  background: #ffffff;
+  border: 1px solid rgba(60, 66, 78, 0.12);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.accordionItem:hover {
+  border-color: rgba(60, 66, 78, 0.24);
+}
+
+.accordionHeader {
+  width: 100%;
+  padding: 16px 20px;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  text-align: left;
+}
+
+.accordionHeaderLeft {
+  display: grid;
+  gap: 2px;
+}
+
+.accordionTitle {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #10131d;
+}
+
+.accordionSubtitle {
+  font-size: 12.5px;
+  color: #64748b;
+}
+
+.chevronIcon {
+  font-size: 14px;
+  color: #94a3b8;
+  transition: transform 0.2s ease;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.accordionBody {
+  padding: 0 20px 20px;
+  border-top: 1px solid rgba(60, 66, 78, 0.07);
+  padding-top: 16px;
+  display: grid;
+  gap: 14px;
+  animation: fadeIn 0.2s ease;
+}
+
+.messagePreviewBox {
+  background: #f8fafc;
+  border: 1px solid rgba(60, 66, 78, 0.1);
+  border-radius: 10px;
+  padding: 14px;
+  font-size: 13px;
+  color: #334155;
+  line-height: 1.55;
+  font-family: inherit;
+}
+
+.accordionActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.textActionBtn {
+  background: transparent;
+  border: none;
+  color: #7c3aed;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.textActionBtn:hover {
+  text-decoration: underline;
+}
+
+.compactCandidateList {
+  display: grid;
+  gap: 8px;
+}
+
+.compactCandidateRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.compactCandidateName {
+  font-weight: 600;
+  color: #10131d;
+}
+
+.compactCandidateMatch {
+  color: #059669;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+/* RIGHT COLUMN STICKY DECISION CARD */
+.summaryCard {
+  background: #ffffff;
+  border: 1px solid rgba(60, 66, 78, 0.14);
+  border-radius: 16px;
+  padding: 22px;
+  box-shadow: 0 8px 30px rgba(16, 19, 29, 0.05);
+  display: grid;
+  gap: 16px;
+}
+
+.readyBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  width: fit-content;
+}
+
+.summaryCardTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #10131d;
+}
+
+.factsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.factItem {
+  display: grid;
+  gap: 2px;
+}
+
+.factLabel {
+  font-size: 10.5px;
+  font-family: var(--font-ibm-mono), monospace;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.factValue {
+  font-size: 13px;
+  font-weight: 700;
+  color: #10131d;
+}
+
+.reassuranceText {
+  font-size: 12.5px;
+  color: #525a6b;
+  line-height: 1.45;
+}
+
+.goldPrimaryBtn {
+  width: 100%;
+  min-height: 46px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(217, 119, 6, 0.35);
+  transition: all 0.2s ease;
+}
+
+.goldPrimaryBtn:hover {
+  background: linear-gradient(135deg, #b45309 0%, #92400e 100%);
+  box-shadow: 0 6px 22px rgba(217, 119, 6, 0.45);
+  transform: translateY(-1px);
+}
+
+.backLink {
+  text-align: center;
+  background: transparent;
+  border: none;
+  color: #64748b;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.backLink:hover {
+  color: #10131d;
+  text-decoration: underline;
+}
+
+/* WHAT HAPPENS NEXT SECONDARY CARD */
+.nextStepsCard {
+  background: #ffffff;
+  border: 1px solid rgba(60, 66, 78, 0.12);
+  border-radius: 16px;
+  padding: 18px 20px;
+  box-shadow: 0 4px 20px rgba(16, 19, 29, 0.03);
+  display: grid;
+  gap: 12px;
+}
+
+.nextStepsTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #10131d;
+}
+
+.nextStepItem {
+  display: grid;
+  gap: 2px;
+}
+
+.nextStepItemTitle {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #10131d;
+}
+
+.nextStepItemDesc {
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* MODAL & SUCCESS STATES */
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  z-index: 300;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease;
+}
+
+.modalSurface {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 28px;
+  max-width: 440px;
+  width: 100%;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2);
+  display: grid;
+  gap: 16px;
+  animation: scaleUp 0.2s ease;
+}
+
+.modalTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: #10131d;
+}
+
+.modalDesc {
+  font-size: 13.5px;
+  color: #525a6b;
+  line-height: 1.5;
+}
+
+.modalActions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.successCard {
+  background: #ffffff;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 10px 40px rgba(16, 185, 129, 0.08);
+  display: grid;
+  gap: 20px;
+  text-align: center;
+  max-width: 600px;
+  margin: 40px auto;
+}
+
+.successIcon {
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  font-size: 24px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto;
+}
+
+.successTitle {
+  font-size: 24px;
+  font-weight: 700;
+  color: #10131d;
+}
+
+.successDesc {
+  font-size: 14px;
+  color: #525a6b;
+}
+
+.statusChecklist {
+  display: grid;
+  gap: 10px;
+  text-align: left;
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 16px 20px;
+  font-size: 13.5px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* RESPONSIVE DESIGN */
+@media (max-width: 1024px) {
+  .layoutGrid {
+    grid-template-columns: 1fr;
+  }
+}

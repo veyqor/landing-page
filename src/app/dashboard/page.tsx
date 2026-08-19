@@ -292,7 +292,7 @@ export default function DashboardPage() {
     const organisation = tenant?.organisations.find((item) => item.id === selectedOrgId) ?? tenant?.organisations[0] ?? null;
 
     if (!tenant || !organisation) {
-      router.replace('/org-context');
+      router.replace('/sign-in');
       return;
     }
 

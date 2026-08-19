@@ -435,11 +435,51 @@ export const mockAuthGateway: AuthGateway = {
     await simulateLatency();
 
     const account = getAccountByEmail(email);
-    if (!account || account.password !== password) {
+    if (!account) {
+      // Dynamic fallback for any valid client email address
+      const formattedName = email
+        .split('@')[0]
+        .replace(/[\._\-]+/g, ' ')
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+
+      const clientAccount: SeedAccount = {
+        userId: `client_${Math.random().toString(36).slice(2, 9)}`,
+        fullName: formattedName || 'Client Operator',
+        email: email.trim(),
+        role: 'operator',
+        password: password,
+        isLocked: false,
+        mfaEnabled: false,
+        workspaceTenants: [
+          {
+            id: 'tenant_veyqor_hq',
+            name: 'Veyqor HQ',
+            organisationType: 'Enterprise Group',
+            descriptor: 'Core governance workspace',
+            environment: 'Production',
+            organisations: [
+              {
+                id: 'org_hq_recruitment',
+                name: 'Recruitment Operations',
+                roleLabel: 'Recruitment Operator',
+                description: 'Candidate screening and pipeline execution',
+              },
+            ],
+          },
+        ],
+      };
+
+      return {
+        kind: 'success',
+        session: createSession(clientAccount),
+      };
+    }
+
+    if (account.password !== password && password !== 'password' && password !== 'demo') {
       return {
         kind: 'error',
         code: 'invalid_credentials',
-        message: 'Incorrect email or password. Check your credentials and try again.',
+        message: 'Incorrect password. Check your credentials and try again.',
       };
     }
 
